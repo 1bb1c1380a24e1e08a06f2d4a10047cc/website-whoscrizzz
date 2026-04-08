@@ -9,9 +9,6 @@ import {
 import { describe, it, expect } from "vitest";
 import app from "../src/index";
 
-declare const Request: typeof globalThis.Request;
-declare const Response: typeof globalThis.Response;
-
 // Type for our test environment
 interface TestEnv {
 	DB: D1Database;

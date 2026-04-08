@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
-		"ignoreDeprecations": "6.0",
 		"target": "es2021",
 		"lib": ["es2021"],
 		"module": "es2022",
 		"moduleResolution": "node",
-
-		"resolveJsonModule": true,		"allowJs": true,
+		"types": ["@cloudflare/workers-types"],
+		"resolveJsonModule": true,
+		"allowJs": true,
 		"checkJs": true,
 		"noEmit": true,
 		"isolatedModules": true,
