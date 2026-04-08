@@ -8,7 +8,7 @@ import { WorkerArgs } from "./types";
  */
 export type Env = {
 	dispatcher: Dispatcher;
-	DB: object;
+	DB: D1Database;
 	DISPATCH_NAMESPACE_NAME: string;
 	// These are auto-provisioned by the setup script - no user input needed
 	ACCOUNT_ID?: string;
@@ -17,6 +17,7 @@ export type Env = {
 	// User-configurable (optional)
 	CUSTOM_DOMAIN?: string;
 	FALLBACK_ORIGIN?: string;
+	WORKERS_DEV_SUBDOMAIN?: string; // Workers.dev subdomain for URL generation
 	// Optional: API token with SSL permissions for custom hostname support
 	CLOUDFLARE_API_TOKEN?: string;
 };
