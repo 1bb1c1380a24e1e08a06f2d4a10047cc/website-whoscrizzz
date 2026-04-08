@@ -9,6 +9,8 @@ import {
 import { describe, it, expect, beforeEach } from "vitest";
 import app from "../src/index";
 
+type D1Database = any;
+
 // Type for our test environment
 interface TestEnv {
 	DB: D1Database;
