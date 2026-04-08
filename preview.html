@@ -1,12 +1,10 @@
-export default {
-async fetch(request) {
-const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>whoscrizzz</title>
+  <title>whoscrizzz — preview</title>
   <meta name="description" content="music · style · links" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -191,12 +189,4 @@ const html = `<!DOCTYPE html>
     <footer>whoscrizzz.com</footer>
   </div>
 </body>
-</html>`;
-    return new Response(html, {
-      headers: {
-        "Content-Type": "text/html;charset=UTF-8",
-        "Cache-Control": "public, max-age=3600",
-      },
-    });
-  },
-};
+</html>
