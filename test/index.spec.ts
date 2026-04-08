@@ -8,6 +8,7 @@ import {
 } from "cloudflare:test";
 import { describe, it, expect, beforeEach } from "vitest";
 import app from "../src/index";
+import type { D1Database } from "@cloudflare/workers-types";
 
 // Type for our test environment
 interface TestEnv {
