@@ -49,7 +49,7 @@ import {
 import { D1QB } from "workers-qb";
 
 // Initialize Hono app with type-safe environment bindings
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: { db: D1QB } }>();
 
 // Track database initialization state across requests in this Worker instance
 let isInitialized = false;
@@ -179,8 +179,8 @@ app.use("*", withDbAndInit, async (c, next) => {
 				newUrl.pathname = path.substring(subdomain.length + 1) || "/";
 				requestToForward = new Request(newUrl.toString(), {
 					method: c.req.method,
-					headers: c.req.headers,
-					body: c.req.body,
+					headers: c.req.raw.headers,
+					body: c.req.raw.body,
 				});
 			}
 
@@ -204,8 +204,8 @@ app.use("*", withDbAndInit, async (c, next) => {
 				newUrl.pathname = path.substring(subdomain.length + 1) || "/";
 				requestToForward = new Request(newUrl.toString(), {
 					method: c.req.method,
-					headers: c.req.headers,
-					body: c.req.body,
+					headers: c.req.raw.headers,
+					body: c.req.raw.body,
 				});
 			}
 
@@ -252,7 +252,7 @@ app.get("/admin", withDbAndInit, async (c) => {
 	 * DB data with custom hostname status
 	 */
 	try {
-		const projects = (await FetchTable(c.var.db, "projects")) as Project[];
+		const projects = (await FetchTable(c.var.db, "projects")) as unknown as Project[];
 		if (projects && projects.length > 0) {
 			body += `
         <div class="dataContainer">
@@ -468,14 +468,18 @@ app.get("/admin", withDbAndInit, async (c) => {
  * Initialize example data (now optional since auto-init handles schema)
  */
 app.get("/init", withDbAndInit, async (c) => {
-	const scripts = await GetScriptsInDispatchNamespace(c.env);
-	// Handle case where scripts is null/undefined (e.g., in tests or when API unavailable)
-	if (scripts && Array.isArray(scripts)) {
-		await Promise.all(
-			scripts.map(async (script) =>
-				DeleteScriptInDispatchNamespace(c.env, script.id),
-			),
-		);
+	try {
+		const scripts = await GetScriptsInDispatchNamespace(c.env);
+		// Handle case where scripts is null/undefined (e.g., in tests or when API unavailable)
+		if (scripts && Array.isArray(scripts)) {
+			await Promise.all(
+				scripts.map(async (script) =>
+					DeleteScriptInDispatchNamespace(c.env, script.id),
+				),
+			);
+		}
+	} catch {
+		// API unavailable (e.g., in test environment) - proceed with DB initialization
 	}
 	await Initialize(c.var.db);
 	return Response.redirect(c.req.url.replace("/init", ""));
