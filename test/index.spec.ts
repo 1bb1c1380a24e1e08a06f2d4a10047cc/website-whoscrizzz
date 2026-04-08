@@ -9,8 +9,6 @@ import {
 import { describe, it, expect, beforeEach } from "vitest";
 import app from "../src/index";
 
-type D1Database = any;
-
 // Type for our test environment
 interface TestEnv {
 	DB: D1Database;
@@ -202,13 +200,3 @@ describe("Input Validation", () => {
 		expect(text).not.toContain("lowercase letters, numbers, and hyphens");
 	});
 });
-
-// Type declaration for test environment
-interface TestEnv {
-	DB: D1Database;
-	dispatcher: {
-		get: (name: string) => { fetch: (req: Request) => Promise<Response> };
-	};
-	DISPATCH_NAMESPACE_NAME: string;
-	CUSTOM_DOMAIN: string;
-}
