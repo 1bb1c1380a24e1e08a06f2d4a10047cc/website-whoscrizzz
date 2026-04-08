@@ -162,7 +162,9 @@ export async function deleteCustomHostname(
 			},
 		);
 
-		const listResult = await listResponse.json();
+		const listResult = (await listResponse.json()) as {
+			result?: Array<{ id: string }>;
+		};
 
 		if (
 			!listResponse.ok ||

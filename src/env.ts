@@ -17,6 +17,7 @@ export type Env = {
 	// User-configurable (optional)
 	CUSTOM_DOMAIN?: string;
 	FALLBACK_ORIGIN?: string;
+	WORKERS_DEV_SUBDOMAIN?: string;
 	// Optional: API token with SSL permissions for custom hostname support
 	CLOUDFLARE_API_TOKEN?: string;
 };
