@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>whoscrizzz — preview</title>
+  <meta name="description" content="music · style · links" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300&family=Outfit:wght@200;300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      padding: 2.5rem 1rem;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(96,120,145,0.13) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 70% at 80% 80%, rgba(59,82,110,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 80% at 50% 50%, rgba(30,41,59,0.9) 0%, transparent 100%),
+        linear-gradient(175deg, #0e1218 0%, #141b25 30%, #0c111a 60%, #090d14 100%);
+    }
+    .card {
+      width: 100%;
+      max-width: 370px;
+      text-align: center;
+    }
+    .logo { margin: 0 auto 0.5rem; display: inline-block; }
+    .logo-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-style: italic;
+      font-size: 42px;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      background: linear-gradient(120deg, #b0bec5 0%, #e0e6ed 45%, #7fa8c4 80%, #90a4b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+      padding-bottom: 4px;
+    }
+    .logo-line {
+      display: block;
+      height: 0.5px;
+      background: linear-gradient(90deg, transparent 0%, #4a7fa0 35%, #64748b 65%, transparent 100%);
+      margin-top: 1px;
+    }
+    .logo-sub {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 200;
+      font-size: 8.5px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: #3a5068;
+      display: block;
+      margin-top: 5px;
+      text-align: right;
+    }
+    .handle {
+      font-size: 10.5px;
+      font-weight: 200;
+      color: #2d3f52;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    .divider {
+      width: 24px;
+      height: 0.5px;
+      background: linear-gradient(90deg, transparent, #3b5f80, transparent);
+      margin: 0 auto 1.5rem;
+    }
+    .links { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.75rem; }
+    .link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 16px;
+      border: 0.5px solid #182130;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #7a92a8;
+      font-size: 12.5px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      background: rgba(10, 16, 26, 0.55);
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .link:hover {
+      border-color: #2d5a7a;
+      background: rgba(30, 58, 90, 0.15);
+      color: #a8bfce;
+    }
+    .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: rgba(8, 13, 22, 0.7);
+      border: 0.5px solid #182130;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .icon svg { width: 14px; height: 14px; }
+    .label { flex: 1; text-align: left; }
+    .arrow {
+      color: #1a2d3d;
+      font-size: 15px;
+      transition: color 0.2s ease;
+    }
+    .link:hover .arrow { color: #3b7aaa; }
+    footer {
+      font-size: 8.5px;
+      color: #18263340;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 200;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <span class="logo-text">whoscrizzz</span>
+      <span class="logo-line"></span>
+      <span class="logo-sub">whoscrizzz.com</span>
+    </div>
+
+    <p class="handle">@whoscrizzz</p>
+    <div class="divider"></div>
+
+    <div class="links">
+      <a class="link" href="https://instagram.com/whoscrizzz" target="_blank" rel="noopener">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c2607a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5"/>
+            <circle cx="12" cy="12" r="5"/>
+            <circle cx="17.5" cy="6.5" r="1" fill="#c2607a" stroke="none"/>
+          </svg>
+        </div>
+        <span class="label">Instagram</span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="link" href="https://x.com/whoscrisss" target="_blank" rel="noopener">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="#4a6070">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </div>
+        <span class="label">X (Twitter)</span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="link" href="https://open.spotify.com/user/whoscrizzz" target="_blank" rel="noopener">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="#1a9e4a">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 0 1-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 1 1-.277-1.215c3.809-.87 7.077-.496 9.712 1.115.293.18.387.563.207.857zm1.223-2.723a.78.78 0 0 1-1.072.257C14.1 12.226 10.59 11.7 7.3 12.657a.78.78 0 0 1-.448-1.492c3.7-1.112 7.593-.557 10.483 1.264a.78.78 0 0 1 .474.272zm.105-2.835C15.26 9.15 10.855 9 7.5 9.983a.937.937 0 1 1-.54-1.794C10.734 7.086 15.643 7.26 19.2 9.5a.937.937 0 0 1-1.286 1.366z"/>
+          </svg>
+        </div>
+        <span class="label">Spotify</span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="link" href="https://pinterest.com/whoscrizzz" target="_blank" rel="noopener">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="#aa2020">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.64 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.772 0 3.137-1.867 3.137-4.561 0-2.384-1.714-4.052-4.163-4.052-2.836 0-4.5 2.127-4.5 4.326 0 .856.33 1.774.741 2.276a.3.3 0 0 1 .069.286c-.076.312-.244.995-.277 1.134-.044.183-.145.222-.335.134-1.249-.581-2.03-2.407-2.03-3.874 0-3.154 2.292-6.052 6.608-6.052 3.469 0 6.165 2.473 6.165 5.776 0 3.447-2.173 6.22-5.19 6.22-1.013 0-1.966-.527-2.292-1.148l-.623 2.378c-.226.869-.835 1.958-1.244 2.621.937.29 1.931.446 2.962.446 5.522 0 10-4.477 10-10S17.522 2 12 2z"/>
+          </svg>
+        </div>
+        <span class="label">Pinterest</span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="link" href="mailto:contacto@whoscrizzz.com">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#3a6a90" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="3"/>
+            <polyline points="2,4 12,13 22,4"/>
+          </svg>
+        </div>
+        <span class="label">Contacto</span>
+        <span class="arrow">›</span>
+      </a>
+    </div>
+    <footer>whoscrizzz.com</footer>
+  </div>
+</body>
+</html>
