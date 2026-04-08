@@ -6,8 +6,11 @@ import {
 	createExecutionContext,
 	waitOnExecutionContext,
 } from "cloudflare:test";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import app from "../src/index";
+
+declare const Request: typeof globalThis.Request;
+declare const Response: typeof globalThis.Response;
 
 // Type for our test environment
 interface TestEnv {

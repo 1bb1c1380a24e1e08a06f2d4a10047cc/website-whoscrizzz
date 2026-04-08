@@ -21,7 +21,7 @@
  *    Provides middleware support and type-safe request handling.
  */
 
-import { Hono } from "hono";
+import { Hono } from "hono/cloudflare-workers";
 
 import {
 	FetchTable,
