@@ -65,7 +65,7 @@ export async function GetProjectBySubdomain(
 			params: [subdomain],
 		},
 	});
-	return result.results as Project | null;
+	return result.results as unknown as Project | null;
 }
 
 export async function GetProjectByCustomHostname(
@@ -80,7 +80,7 @@ export async function GetProjectByCustomHostname(
 			params: [hostname],
 		},
 	});
-	return result.results as Project | null;
+	return result.results as unknown as Project | null;
 }
 
 export async function GetAllProjects(db: D1QB): Promise<Project[]> {
@@ -88,7 +88,7 @@ export async function GetAllProjects(db: D1QB): Promise<Project[]> {
 		tableName: "projects",
 		fields: "*",
 	});
-	return (result.results as Project[]) || [];
+	return (result.results as unknown as Project[]) || [];
 }
 
 export async function UpdateProject(
