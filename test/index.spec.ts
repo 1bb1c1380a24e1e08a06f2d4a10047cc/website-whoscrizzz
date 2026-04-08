@@ -6,9 +6,19 @@ import {
 	createExecutionContext,
 	waitOnExecutionContext,
 } from "cloudflare:test";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import app from "../src/index";
-import type { Env } from "../src/env";
+import type { D1Database } from "@cloudflare/workers-types";
+
+// Type for our test environment
+interface TestEnv {
+	DB: D1Database;
+	dispatcher: {
+		get: (name: string) => { fetch: (req: Request) => Promise<Response> };
+	};
+	DISPATCH_NAMESPACE_NAME: string;
+	CUSTOM_DOMAIN: string;
+}
 
 describe("Workers for Platforms Template", () => {
 	// Helper to make requests to the app
@@ -18,7 +28,7 @@ describe("Workers for Platforms Template", () => {
 	): Promise<Response> {
 		const request = new Request(`http://localhost${path}`, options);
 		const ctx = createExecutionContext();
-		const response = await app.fetch(request, env as unknown as Env, ctx);
+		const response = await app.fetch(request, env as unknown as TestEnv, ctx);
 		await waitOnExecutionContext(ctx);
 		return response;
 	}
@@ -152,7 +162,7 @@ describe("Input Validation", () => {
 	): Promise<Response> {
 		const request = new Request(`http://localhost${path}`, options);
 		const ctx = createExecutionContext();
-		const response = await app.fetch(request, env as unknown as Env, ctx);
+		const response = await app.fetch(request, env as unknown as TestEnv, ctx);
 		await waitOnExecutionContext(ctx);
 		return response;
 	}
@@ -192,3 +202,12 @@ describe("Input Validation", () => {
 	});
 });
 
+// Type declaration for test environment
+interface TestEnv {
+	DB: D1Database;
+	dispatcher: {
+		get: (name: string) => { fetch: (req: Request) => Promise<Response> };
+	};
+	DISPATCH_NAMESPACE_NAME: string;
+	CUSTOM_DOMAIN: string;
+}
