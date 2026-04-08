@@ -8,7 +8,7 @@ import { WorkerArgs } from "./types";
  */
 export type Env = {
 	dispatcher: Dispatcher;
-	DB: object;
+	DB: D1Database;
 	DISPATCH_NAMESPACE_NAME: string;
 	// These are auto-provisioned by the setup script - no user input needed
 	ACCOUNT_ID?: string;
