@@ -1,7 +1,7 @@
 // Cloudflare API integration for custom hostnames
-import type { Env } from "./env";
+import type * as env_1 from "./env";
 
-function getAuthHeaders(env: Env): Record<string, string> {
+function getAuthHeaders(env: env_1.Env): Record<string, string> {
 	// Prefer user-provided API token with SSL permissions
 	// Fall back to dispatch namespace token (may not have SSL permissions)
 	const token = env.CLOUDFLARE_API_TOKEN || env.DISPATCH_NAMESPACE_API_TOKEN;
@@ -15,7 +15,7 @@ function getAuthHeaders(env: Env): Record<string, string> {
 	return {};
 }
 
-function isApiConfigured(env: Env): boolean {
+function isApiConfigured(env: env_1.Env): boolean {
 	const hasAuth =
 		!!env.CLOUDFLARE_API_TOKEN || !!env.DISPATCH_NAMESPACE_API_TOKEN;
 	const configured = !!(env.CLOUDFLARE_ZONE_ID && hasAuth);
@@ -30,7 +30,7 @@ function isApiConfigured(env: Env): boolean {
 }
 
 export async function createCustomHostname(
-	env: Env,
+	env: env_1.Env,
 	hostname: string,
 ): Promise<boolean> {
 	if (!isApiConfigured(env)) {
@@ -81,7 +81,7 @@ export interface CustomHostnameStatus {
 }
 
 export async function getCustomHostnameStatus(
-	env: Env,
+	env: env_1.Env,
 	hostname: string,
 ): Promise<CustomHostnameStatus> {
 	if (!isApiConfigured(env)) {
@@ -146,7 +146,7 @@ export async function getCustomHostnameStatus(
 }
 
 export async function deleteCustomHostname(
-	env: Env,
+	env: env_1.Env,
 	hostname: string,
 ): Promise<boolean> {
 	if (!isApiConfigured(env)) {
