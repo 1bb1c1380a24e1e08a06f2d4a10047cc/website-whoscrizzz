@@ -1,0 +1,15 @@
+name = "whoscrizzz-links"
+main = "src/index.ts"
+compatibility_date = "2026-04-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "d1-template-database"
+database_id = "d8eb2372-f663-4377-a26a-61aa92f0a39f"
+
+[[kv_namespaces]]
+binding = "AUTH_KV"
+id = "55b2d820ff6f4ea2ae845cbdc7663c5c"
+
+# Set the admin password as a secret:
+# wrangler secret put ADMIN_PASSWORD
