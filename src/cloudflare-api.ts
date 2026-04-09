@@ -20,11 +20,11 @@ function isApiConfigured(env: Env): boolean {
 		!!env.CLOUDFLARE_API_TOKEN || !!env.DISPATCH_NAMESPACE_API_TOKEN;
 	const configured = !!(env.CLOUDFLARE_ZONE_ID && hasAuth);
 	if (!configured) {
-		console.error("Custom hostname API not configured:", {
-			hasZoneId: !!env.CLOUDFLARE_ZONE_ID,
-			hasApiToken: !!env.CLOUDFLARE_API_TOKEN,
-			hasDispatchToken: !!env.DISPATCH_NAMESPACE_API_TOKEN,
-		});
+		// console.error("Custom hostname API not configured:", {
+		// 	hasZoneId: !!env.CLOUDFLARE_ZONE_ID,
+		// 	hasApiToken: !!env.CLOUDFLARE_API_TOKEN,
+		// 	hasDispatchToken: !!env.DISPATCH_NAMESPACE_API_TOKEN,
+		// });
 	}
 	return configured;
 }
@@ -104,7 +104,6 @@ export async function getCustomHostnameStatus(
 
 		if (!response.ok || !result.success) {
 			const errorMsg = result.errors?.[0]?.message || "API request failed";
-			console.error("Custom hostname API error:", errorMsg, result);
 			// Provide user-friendly message for common errors
 			if (
 				errorMsg.includes("Authentication") ||
