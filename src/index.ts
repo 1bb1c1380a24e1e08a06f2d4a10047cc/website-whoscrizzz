@@ -468,14 +468,18 @@ app.get("/admin", withDbAndInit, async (c) => {
  * Initialize example data (now optional since auto-init handles schema)
  */
 app.get("/init", withDbAndInit, async (c) => {
-	const scripts = await GetScriptsInDispatchNamespace(c.env);
-	// Handle case where scripts is null/undefined (e.g., in tests or when API unavailable)
-	if (scripts && Array.isArray(scripts)) {
-		await Promise.all(
-			scripts.map(async (script) =>
-				DeleteScriptInDispatchNamespace(c.env, script.id),
-			),
-		);
+	try {
+		const scripts = await GetScriptsInDispatchNamespace(c.env);
+		// Handle case where scripts is null/undefined (e.g., in tests or when API unavailable)
+		if (scripts && Array.isArray(scripts)) {
+			await Promise.all(
+				scripts.map(async (script) =>
+					DeleteScriptInDispatchNamespace(c.env, script.id),
+				),
+			);
+		}
+	} catch {
+		// API unavailable (e.g., in tests or missing credentials) — skip script cleanup
 	}
 	await Initialize(c.var.db);
 	return Response.redirect(c.req.url.replace("/init", ""));
