@@ -11,6 +11,7 @@ import app from "../src/index";
 import { checkEnvConfig } from "../src/resource";
 import { handleDispatchError } from "../src/router";
 import { Hono } from "hono";
+import type { Env } from "../src/env";
 
 // Type for our test environment
 interface TestEnv {
@@ -484,9 +485,7 @@ describe("checkEnvConfig", () => {
 			ACCOUNT_ID: "test-account-id",
 			DISPATCH_NAMESPACE_API_TOKEN: "test-token",
 			DISPATCH_NAMESPACE_NAME: "test-ns",
-			dispatcher: {} as any,
-			DB: {} as any,
-		});
+		} as unknown as Env);
 		expect(result.ok).toBe(true);
 		expect(result.missing).toHaveLength(0);
 	});
@@ -495,9 +494,7 @@ describe("checkEnvConfig", () => {
 		const result = checkEnvConfig({
 			DISPATCH_NAMESPACE_API_TOKEN: "test-token",
 			DISPATCH_NAMESPACE_NAME: "test-ns",
-			dispatcher: {} as any,
-			DB: {} as any,
-		});
+		} as unknown as Env);
 		expect(result.ok).toBe(false);
 		expect(result.missing).toContain("ACCOUNT_ID");
 	});
@@ -506,9 +503,7 @@ describe("checkEnvConfig", () => {
 		const result = checkEnvConfig({
 			ACCOUNT_ID: "test-account-id",
 			DISPATCH_NAMESPACE_NAME: "test-ns",
-			dispatcher: {} as any,
-			DB: {} as any,
-		});
+		} as unknown as Env);
 		expect(result.ok).toBe(false);
 		expect(result.missing).toContain("DISPATCH_NAMESPACE_API_TOKEN");
 	});
@@ -518,19 +513,15 @@ describe("checkEnvConfig", () => {
 			ACCOUNT_ID: "test-account-id",
 			DISPATCH_NAMESPACE_API_TOKEN: "test-token",
 			DISPATCH_NAMESPACE_NAME: "",
-			dispatcher: {} as any,
-			DB: {} as any,
-		});
+		} as unknown as Env);
 		expect(result.ok).toBe(false);
 		expect(result.missing).toContain("DISPATCH_NAMESPACE_NAME");
 	});
 
 	it("should report all three fields missing when env has none", () => {
 		const result = checkEnvConfig({
-			dispatcher: {} as any,
-			DB: {} as any,
 			DISPATCH_NAMESPACE_NAME: "",
-		});
+		} as unknown as Env);
 		expect(result.ok).toBe(false);
 		expect(result.missing).toContain("ACCOUNT_ID");
 		expect(result.missing).toContain("DISPATCH_NAMESPACE_API_TOKEN");
