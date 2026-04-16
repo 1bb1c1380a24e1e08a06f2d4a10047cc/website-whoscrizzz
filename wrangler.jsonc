@@ -5,7 +5,7 @@
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": ["nodejs_compat"],
 	// Enable workers.dev subdomain (set to false if using custom domain with routes)
-	"workers_dev": true,
+	"workers_dev": false,
 	// Smart Placement - automatically run Worker close to your back-end services
 	"placement": {
 		"mode": "smart"

@@ -7,7 +7,7 @@
  * - Creates dispatch namespace
  * - Creates a permanent API token with correct permissions
  * - Auto-detects zone ID for custom domain
- * - Updates wrangler.toml with routes
+ * - Updates wrangler config with routes
  *
  * Uses the temporary CF_API_TOKEN from deploy flow to create permanent resources.
  */
@@ -30,12 +30,19 @@ function log(color, msg) {
 	console.log(`${color}${msg}${reset}`);
 }
 
-function getVarFromWranglerToml(varName) {
-	const configPath = path.join(PROJECT_ROOT, "wrangler.toml");
+function getVarFromWranglerConfig(varName) {
+	// Try wrangler.jsonc first, then wrangler.toml for backward compatibility
+	let configPath = path.join(PROJECT_ROOT, "wrangler.jsonc");
+	let isJson = true;
+	if (!fs.existsSync(configPath)) {
+		configPath = path.join(PROJECT_ROOT, "wrangler.toml");
+		isJson = false;
+	}
 	if (fs.existsSync(configPath)) {
 		const content = fs.readFileSync(configPath, "utf-8");
-		// Match VAR_NAME = "value" in [vars] section
-		const regex = new RegExp(`${varName}\\s*=\\s*["']([^"']*)["']`);
+		const regex = isJson
+			? new RegExp(`"${varName}"\\s*:\\s*"([^"]*)"`)
+			: new RegExp(`${varName}\\s*=\\s*["']([^"']*)["']`);
 		const match = content.match(regex);
 		if (match && match[1] && match[1] !== "") {
 			return match[1];
@@ -61,12 +68,12 @@ function getConfig() {
 		apiToken: deployToken, // Use deploy token for setup operations (namespace creation, etc)
 		userApiToken: userToken, // User's token with SSL permissions for custom hostnames
 		customDomain:
-			process.env.CUSTOM_DOMAIN || getVarFromWranglerToml("CUSTOM_DOMAIN"),
+			process.env.CUSTOM_DOMAIN || getVarFromWranglerConfig("CUSTOM_DOMAIN"),
 		zoneId:
 			process.env.CLOUDFLARE_ZONE_ID ||
-			getVarFromWranglerToml("CLOUDFLARE_ZONE_ID"),
+			getVarFromWranglerConfig("CLOUDFLARE_ZONE_ID"),
 		fallbackOrigin:
-			process.env.FALLBACK_ORIGIN || getVarFromWranglerToml("FALLBACK_ORIGIN"),
+			process.env.FALLBACK_ORIGIN || getVarFromWranglerConfig("FALLBACK_ORIGIN"),
 	};
 }
 
@@ -78,19 +85,31 @@ function getAuthHeaders(apiToken) {
 }
 
 function getDispatchNamespaceFromConfig() {
-	const configPath = path.join(PROJECT_ROOT, "wrangler.toml");
+	// Try wrangler.jsonc first, then wrangler.toml for backward compatibility
+	let configPath = path.join(PROJECT_ROOT, "wrangler.jsonc");
+	let isJson = true;
+	if (!fs.existsSync(configPath)) {
+		configPath = path.join(PROJECT_ROOT, "wrangler.toml");
+		isJson = false;
+	}
 
 	if (fs.existsSync(configPath)) {
 		const content = fs.readFileSync(configPath, "utf-8");
-		const match = content.match(
-			/\[\[dispatch_namespaces\]\][\s\S]*?namespace\s*=\s*['"](.*?)['"]/,
-		);
-		if (match) return match[1];
-
-		const varMatch = content.match(
-			/DISPATCH_NAMESPACE_NAME\s*=\s*['"](.*?)['"]/,
-		);
-		if (varMatch) return varMatch[1];
+		if (isJson) {
+			const match = content.match(/"namespace"\s*:\s*"([^"]*)"/);
+			if (match) return match[1];
+			const varMatch = content.match(/"DISPATCH_NAMESPACE_NAME"\s*:\s*"([^"]*)"/);
+			if (varMatch) return varMatch[1];
+		} else {
+			const match = content.match(
+				/\[\[dispatch_namespaces\]\][\s\S]*?namespace\s*=\s*['"](.*?)['"]/,
+			);
+			if (match) return match[1];
+			const varMatch = content.match(
+				/DISPATCH_NAMESPACE_NAME\s*=\s*['"](.*?)['"]/,
+			);
+			if (varMatch) return varMatch[1];
+		}
 	}
 
 	return "workers-platform-template";
@@ -306,126 +325,199 @@ async function detectZoneId(config) {
 }
 
 function updateWranglerConfig(config) {
-	const wranglerPath = path.join(PROJECT_ROOT, "wrangler.toml");
+	// Try wrangler.jsonc first, then wrangler.toml for backward compatibility
+	let wranglerPath = path.join(PROJECT_ROOT, "wrangler.jsonc");
+	let isJson = true;
+	if (!fs.existsSync(wranglerPath)) {
+		wranglerPath = path.join(PROJECT_ROOT, "wrangler.toml");
+		isJson = false;
+	}
 
 	if (!fs.existsSync(wranglerPath)) {
-		log(yellow, "⚠️  wrangler.toml not found");
+		log(yellow, "⚠️  wrangler config not found");
 		return false;
 	}
 
 	let content = fs.readFileSync(wranglerPath, "utf-8");
 	let modified = false;
 
-	// Add ACCOUNT_ID to vars if not present
-	if (config.accountId) {
-		if (content.includes('ACCOUNT_ID = "')) {
-			content = content.replace(
-				/ACCOUNT_ID = ".*"/,
-				`ACCOUNT_ID = "${config.accountId}"`,
-			);
-		} else {
-			// Add after DISPATCH_NAMESPACE_NAME
-			content = content.replace(
-				/DISPATCH_NAMESPACE_NAME = ".*"/,
-				`DISPATCH_NAMESPACE_NAME = "${getDispatchNamespaceFromConfig()}"\nACCOUNT_ID = "${config.accountId}"`,
-			);
+	if (isJson) {
+		// JSON format updates
+		if (config.accountId) {
+			if (content.includes('"ACCOUNT_ID":')) {
+				content = content.replace(
+					/"ACCOUNT_ID"\s*:\s*"[^"]*"/,
+					`"ACCOUNT_ID": "${config.accountId}"`,
+				);
+			} else {
+				content = content.replace(
+					/"DISPATCH_NAMESPACE_NAME"\s*:\s*"[^"]*"/,
+					`"DISPATCH_NAMESPACE_NAME": "${getDispatchNamespaceFromConfig()}",\n\t\t"ACCOUNT_ID": "${config.accountId}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set ACCOUNT_ID`);
 		}
-		modified = true;
-		log(green, `✅ Set ACCOUNT_ID`);
-	}
 
-	// Update CUSTOM_DOMAIN if set
-	if (config.customDomain && config.customDomain !== "") {
-		content = content.replace(
-			/CUSTOM_DOMAIN = ".*"/,
-			`CUSTOM_DOMAIN = "${config.customDomain}"`,
-		);
-		content = content.replace(/workers_dev = true/, "workers_dev = false");
-		modified = true;
-		log(green, `✅ Set CUSTOM_DOMAIN = "${config.customDomain}"`);
-	}
-
-	// Update CLOUDFLARE_ZONE_ID if set
-	if (config.zoneId) {
-		if (content.includes('CLOUDFLARE_ZONE_ID = "')) {
+		if (config.customDomain && config.customDomain !== "") {
 			content = content.replace(
-				/CLOUDFLARE_ZONE_ID = ".*"/,
-				`CLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
+				/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
+				`"CUSTOM_DOMAIN": "${config.customDomain}"`,
 			);
-		} else {
-			// Add to vars section
+			content = content.replace(/"workers_dev"\s*:\s*true/, `"workers_dev": false`);
+			modified = true;
+			log(green, `✅ Set CUSTOM_DOMAIN = "${config.customDomain}"`);
+		}
+
+		if (config.zoneId) {
+			if (content.includes('"CLOUDFLARE_ZONE_ID":')) {
+				content = content.replace(
+					/"CLOUDFLARE_ZONE_ID"\s*:\s*"[^"]*"/,
+					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
+				);
+			} else {
+				content = content.replace(
+					/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
+					`"CUSTOM_DOMAIN": "${config.customDomain}",\n\t\t"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set CLOUDFLARE_ZONE_ID`);
+		}
+
+		const fallbackOrigin =
+			config.fallbackOrigin ||
+			(config.customDomain ? `my.${config.customDomain}` : "");
+		if (fallbackOrigin) {
+			if (content.includes('"FALLBACK_ORIGIN":')) {
+				content = content.replace(
+					/"FALLBACK_ORIGIN"\s*:\s*"[^"]*"/,
+					`"FALLBACK_ORIGIN": "${fallbackOrigin}"`,
+				);
+			} else if (config.zoneId) {
+				content = content.replace(
+					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
+					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}",\n\t\t"FALLBACK_ORIGIN": "${fallbackOrigin}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set FALLBACK_ORIGIN = "${fallbackOrigin}"`);
+		}
+
+		if (config.customDomain && config.customDomain !== "" && config.zoneId) {
+			// Remove any existing routes entry
+			content = content.replace(/,?\s*"routes"\s*:\s*\[[\s\S]*?\]/g, "");
+
+			const routesSection = `,\n\t"routes": [\n\t\t{ "pattern": "${config.customDomain}/*", "zone_id": "${config.zoneId}" },\n\t\t{ "pattern": "*.${config.customDomain}/*", "zone_id": "${config.zoneId}" }\n\t]`;
+
+			// Insert before the closing brace of the main JSON object
+			content = content.replace(/(\n})(\s*)$/, `${routesSection}$1$2`);
+
+			modified = true;
+			log(green, `✅ Added routes for ${config.customDomain}`);
+		}
+	} else {
+		// TOML format updates (legacy)
+		if (config.accountId) {
+			if (content.includes('ACCOUNT_ID = "')) {
+				content = content.replace(
+					/ACCOUNT_ID = ".*"/,
+					`ACCOUNT_ID = "${config.accountId}"`,
+				);
+			} else {
+				content = content.replace(
+					/DISPATCH_NAMESPACE_NAME = ".*"/,
+					`DISPATCH_NAMESPACE_NAME = "${getDispatchNamespaceFromConfig()}"\nACCOUNT_ID = "${config.accountId}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set ACCOUNT_ID`);
+		}
+
+		if (config.customDomain && config.customDomain !== "") {
 			content = content.replace(
 				/CUSTOM_DOMAIN = ".*"/,
-				`CUSTOM_DOMAIN = "${config.customDomain}"\nCLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
+				`CUSTOM_DOMAIN = "${config.customDomain}"`,
 			);
+			content = content.replace(/workers_dev = true/, "workers_dev = false");
+			modified = true;
+			log(green, `✅ Set CUSTOM_DOMAIN = "${config.customDomain}"`);
 		}
-		modified = true;
-		log(green, `✅ Set CLOUDFLARE_ZONE_ID`);
-	}
 
-	// Set fallback origin (default to my.{domain})
-	const fallbackOrigin =
-		config.fallbackOrigin ||
-		(config.customDomain ? `my.${config.customDomain}` : "");
-	if (fallbackOrigin) {
-		if (content.includes('FALLBACK_ORIGIN = "')) {
-			content = content.replace(
-				/FALLBACK_ORIGIN = ".*"/,
-				`FALLBACK_ORIGIN = "${fallbackOrigin}"`,
-			);
-		} else if (config.zoneId) {
-			content = content.replace(
-				`CLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
-				`CLOUDFLARE_ZONE_ID = "${config.zoneId}"\nFALLBACK_ORIGIN = "${fallbackOrigin}"`,
-			);
+		if (config.zoneId) {
+			if (content.includes('CLOUDFLARE_ZONE_ID = "')) {
+				content = content.replace(
+					/CLOUDFLARE_ZONE_ID = ".*"/,
+					`CLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
+				);
+			} else {
+				content = content.replace(
+					/CUSTOM_DOMAIN = ".*"/,
+					`CUSTOM_DOMAIN = "${config.customDomain}"\nCLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set CLOUDFLARE_ZONE_ID`);
 		}
-		modified = true;
-		log(green, `✅ Set FALLBACK_ORIGIN = "${fallbackOrigin}"`);
-	}
 
-	// Add routes if custom domain and zone ID are configured
-	if (config.customDomain && config.customDomain !== "" && config.zoneId) {
-		// Remove any existing routes section
-		content = content.replace(
-			/\n# Routes for custom domain\nroutes = \[[\s\S]*?\]\n/g,
-			"",
-		);
-		content = content.replace(/\nroutes = \[[\s\S]*?\]\n/g, "");
+		const fallbackOrigin =
+			config.fallbackOrigin ||
+			(config.customDomain ? `my.${config.customDomain}` : "");
+		if (fallbackOrigin) {
+			if (content.includes('FALLBACK_ORIGIN = "')) {
+				content = content.replace(
+					/FALLBACK_ORIGIN = ".*"/,
+					`FALLBACK_ORIGIN = "${fallbackOrigin}"`,
+				);
+			} else if (config.zoneId) {
+				content = content.replace(
+					`CLOUDFLARE_ZONE_ID = "${config.zoneId}"`,
+					`CLOUDFLARE_ZONE_ID = "${config.zoneId}"\nFALLBACK_ORIGIN = "${fallbackOrigin}"`,
+				);
+			}
+			modified = true;
+			log(green, `✅ Set FALLBACK_ORIGIN = "${fallbackOrigin}"`);
+		}
 
-		const routesSection = `
+		if (config.customDomain && config.customDomain !== "" && config.zoneId) {
+			content = content.replace(
+				/\n# Routes for custom domain\nroutes = \[[\s\S]*?\]\n/g,
+				"",
+			);
+			content = content.replace(/\nroutes = \[[\s\S]*?\]\n/g, "");
+
+			const routesSection = `
 # Routes for custom domain
 routes = [
   { pattern = "${config.customDomain}/*", zone_id = "${config.zoneId}" },
   { pattern = "*.${config.customDomain}/*", zone_id = "${config.zoneId}" }
 ]
 `;
+			if (content.includes("workers_dev = false")) {
+				content = content.replace(
+					"workers_dev = false",
+					`workers_dev = false\n${routesSection}`,
+				);
+			} else if (content.includes("workers_dev = true")) {
+				content = content.replace(
+					"workers_dev = true",
+					`workers_dev = false\n${routesSection}`,
+				);
+			} else {
+				content = content.replace(
+					/(compatibility_flags = \[.*?\])/,
+					`$1\n${routesSection}`,
+				);
+			}
 
-		// Insert routes after workers_dev line (top-level config area)
-		if (content.includes("workers_dev = false")) {
-			content = content.replace(
-				"workers_dev = false",
-				`workers_dev = false\n${routesSection}`,
-			);
-		} else if (content.includes("workers_dev = true")) {
-			content = content.replace(
-				"workers_dev = true",
-				`workers_dev = false\n${routesSection}`,
-			);
-		} else {
-			// Fallback: add after compatibility_flags or at top
-			content = content.replace(
-				/(compatibility_flags = \[.*?\])/,
-				`$1\n${routesSection}`,
-			);
+			modified = true;
+			log(green, `✅ Added routes for ${config.customDomain}`);
 		}
-
-		modified = true;
-		log(green, `✅ Added routes for ${config.customDomain}`);
 	}
 
 	if (modified) {
 		fs.writeFileSync(wranglerPath, content, "utf-8");
-		log(green, "✅ wrangler.toml updated");
+		log(green, `✅ ${isJson ? "wrangler.jsonc" : "wrangler.toml"} updated`);
 	}
 
 	return modified;
@@ -498,7 +590,7 @@ async function main() {
 	);
 	log(
 		cyan,
-		`   CUSTOM_DOMAIN (toml): ${getVarFromWranglerToml("CUSTOM_DOMAIN") || "not set"}`,
+		`   CUSTOM_DOMAIN (config): ${getVarFromWranglerConfig("CUSTOM_DOMAIN") || "not set"}`,
 	);
 	console.log("");
 
@@ -551,7 +643,7 @@ async function main() {
 		config.zoneId = await detectZoneId(config);
 	}
 
-	// Update wrangler.toml with config
+	// Update wrangler config with config
 	updateWranglerConfig(config);
 
 	// Write secrets to .dev.vars file - wrangler will use these during deploy

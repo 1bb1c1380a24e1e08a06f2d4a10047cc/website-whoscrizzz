@@ -8,7 +8,7 @@
  * - Creates dispatch namespace for Workers for Platforms
  * - Auto-creates API tokens with correct permissions
  * - Generates .dev.vars file with all required secrets
- * - Updates wrangler.toml with routes and resource IDs
+ * - Updates wrangler config with routes and resource IDs
  */
 
 const { execSync } = require("child_process");
@@ -587,56 +587,115 @@ CUSTOM_DOMAIN="${this.config.customDomain}"
 	}
 
 	async updateWranglerConfig() {
-		log("blue", "🔧 Updating wrangler.toml...");
+		// Try wrangler.jsonc first, then wrangler.toml for backward compatibility
+		let wranglerPath = path.join(PROJECT_ROOT, "wrangler.jsonc");
+		let isJson = true;
+		if (!fs.existsSync(wranglerPath)) {
+			wranglerPath = path.join(PROJECT_ROOT, "wrangler.toml");
+			isJson = false;
+		}
 
-		const wranglerPath = path.join(PROJECT_ROOT, "wrangler.toml");
+		log("blue", `🔧 Updating ${isJson ? "wrangler.jsonc" : "wrangler.toml"}...`);
 
 		if (!fs.existsSync(wranglerPath)) {
-			log("yellow", "⚠️  wrangler.toml not found");
+			log("yellow", "⚠️  wrangler config not found");
 			return;
 		}
 
 		let content = fs.readFileSync(wranglerPath, "utf-8");
 
-		// Update vars section
-		if (this.config.customDomain && this.config.customDomain !== "") {
-			content = content.replace(
-				/CUSTOM_DOMAIN = ".*"/,
-				`CUSTOM_DOMAIN = "${this.config.customDomain}"`,
-			);
+		if (isJson) {
+			// JSON format updates
+			if (this.config.customDomain && this.config.customDomain !== "") {
+				content = content.replace(
+					/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
+					`"CUSTOM_DOMAIN": "${this.config.customDomain}"`,
+				);
+				content = content.replace(
+					/"workers_dev"\s*:\s*true/,
+					`"workers_dev": false`,
+				);
+			}
 
-			// Set workers_dev = false for custom domain
-			content = content.replace(/workers_dev = true/, "workers_dev = false");
-		}
+			if (this.config.zoneId) {
+				if (content.includes('"CLOUDFLARE_ZONE_ID":')) {
+					content = content.replace(
+						/"CLOUDFLARE_ZONE_ID"\s*:\s*"[^"]*"/,
+						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
+					);
+				} else {
+					content = content.replace(
+						/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
+						`"CUSTOM_DOMAIN": "${this.config.customDomain}",\n\t\t"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
+					);
+				}
+			}
 
-		if (this.config.zoneId) {
-			content = content.replace(
-				/CLOUDFLARE_ZONE_ID = ".*"/,
-				`CLOUDFLARE_ZONE_ID = "${this.config.zoneId}"`,
-			);
-		}
+			if (this.config.fallbackOrigin) {
+				if (content.includes('"FALLBACK_ORIGIN":')) {
+					content = content.replace(
+						/"FALLBACK_ORIGIN"\s*:\s*"[^"]*"/,
+						`"FALLBACK_ORIGIN": "${this.config.fallbackOrigin}"`,
+					);
+				} else if (this.config.zoneId) {
+					content = content.replace(
+						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
+						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}",\n\t\t"FALLBACK_ORIGIN": "${this.config.fallbackOrigin}"`,
+					);
+				}
+			}
 
-		if (this.config.fallbackOrigin) {
-			content = content.replace(
-				/FALLBACK_ORIGIN = ".*"/,
-				`FALLBACK_ORIGIN = "${this.config.fallbackOrigin}"`,
-			);
-		}
+			if (
+				this.config.customDomain &&
+				this.config.customDomain !== "" &&
+				this.config.zoneId
+			) {
+				// Remove any existing routes entry
+				content = content.replace(/,?\s*"routes"\s*:\s*\[[\s\S]*?\]/g, "");
 
-		// Add routes if custom domain is configured
-		if (
-			this.config.customDomain &&
-			this.config.customDomain !== "" &&
-			this.config.zoneId
-		) {
-			// Remove any existing routes section
-			content = content.replace(
-				/\n# Routes for custom domain\nroutes = \[[\s\S]*?\]\n/g,
-				"",
-			);
+				const routesSection = `,\n\t"routes": [\n\t\t{ "pattern": "${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" },\n\t\t{ "pattern": "*.${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" }\n\t]`;
 
-			// Add new routes section before [vars] or at the end
-			const routesSection = `
+				// Insert before the closing brace of the main JSON object
+				content = content.replace(/(\n})(\s*)$/, `${routesSection}$1$2`);
+
+				log("green", "✅ Added routes for custom domain");
+				this.config.routesAdded = true;
+			}
+		} else {
+			// TOML format updates (legacy)
+			if (this.config.customDomain && this.config.customDomain !== "") {
+				content = content.replace(
+					/CUSTOM_DOMAIN = ".*"/,
+					`CUSTOM_DOMAIN = "${this.config.customDomain}"`,
+				);
+				content = content.replace(/workers_dev = true/, "workers_dev = false");
+			}
+
+			if (this.config.zoneId) {
+				content = content.replace(
+					/CLOUDFLARE_ZONE_ID = ".*"/,
+					`CLOUDFLARE_ZONE_ID = "${this.config.zoneId}"`,
+				);
+			}
+
+			if (this.config.fallbackOrigin) {
+				content = content.replace(
+					/FALLBACK_ORIGIN = ".*"/,
+					`FALLBACK_ORIGIN = "${this.config.fallbackOrigin}"`,
+				);
+			}
+
+			if (
+				this.config.customDomain &&
+				this.config.customDomain !== "" &&
+				this.config.zoneId
+			) {
+				content = content.replace(
+					/\n# Routes for custom domain\nroutes = \[[\s\S]*?\]\n/g,
+					"",
+				);
+
+				const routesSection = `
 # Routes for custom domain
 routes = [
   { pattern = "${this.config.customDomain}/*", zone_id = "${this.config.zoneId}" },
@@ -644,19 +703,19 @@ routes = [
 ]
 `;
 
-			// Insert before [vars] section
-			if (content.includes("[vars]")) {
-				content = content.replace("[vars]", `${routesSection}\n[vars]`);
-			} else {
-				content += routesSection;
-			}
+				if (content.includes("[vars]")) {
+					content = content.replace("[vars]", `${routesSection}\n[vars]`);
+				} else {
+					content += routesSection;
+				}
 
-			log("green", "✅ Added routes for custom domain");
-			this.config.routesAdded = true;
+				log("green", "✅ Added routes for custom domain");
+				this.config.routesAdded = true;
+			}
 		}
 
 		fs.writeFileSync(wranglerPath, content, "utf-8");
-		log("green", "✅ wrangler.toml updated");
+		log("green", `✅ ${isJson ? "wrangler.jsonc" : "wrangler.toml"} updated`);
 	}
 
 	displayFinalReport() {
@@ -691,7 +750,7 @@ routes = [
 		}
 
 		if (this.config.routesAdded) {
-			log("green", "   ✅ Routes: Added to wrangler.toml");
+			log("green", "   ✅ Routes: Added to wrangler config");
 		}
 
 		console.log("");
