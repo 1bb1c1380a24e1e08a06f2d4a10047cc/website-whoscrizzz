@@ -350,9 +350,11 @@ function updateWranglerConfig(config) {
 					`"ACCOUNT_ID": "${config.accountId}"`,
 				);
 			} else {
+				const indentMatch = content.match(/([ \t]*)"DISPATCH_NAMESPACE_NAME"/);
+				const indent = indentMatch ? indentMatch[1] : "\t\t";
 				content = content.replace(
 					/"DISPATCH_NAMESPACE_NAME"\s*:\s*"[^"]*"/,
-					`"DISPATCH_NAMESPACE_NAME": "${getDispatchNamespaceFromConfig()}",\n\t\t"ACCOUNT_ID": "${config.accountId}"`,
+					`"DISPATCH_NAMESPACE_NAME": "${getDispatchNamespaceFromConfig()}",\n${indent}"ACCOUNT_ID": "${config.accountId}"`,
 				);
 			}
 			modified = true;
@@ -376,9 +378,11 @@ function updateWranglerConfig(config) {
 					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
 				);
 			} else {
+				const indentMatch = content.match(/([ \t]*)"CUSTOM_DOMAIN"/);
+				const indent = indentMatch ? indentMatch[1] : "\t\t";
 				content = content.replace(
 					/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
-					`"CUSTOM_DOMAIN": "${config.customDomain}",\n\t\t"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
+					`"CUSTOM_DOMAIN": "${config.customDomain}",\n${indent}"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
 				);
 			}
 			modified = true;
@@ -395,9 +399,11 @@ function updateWranglerConfig(config) {
 					`"FALLBACK_ORIGIN": "${fallbackOrigin}"`,
 				);
 			} else if (config.zoneId) {
+				const indentMatch = content.match(/([ \t]*)"CLOUDFLARE_ZONE_ID"/);
+				const indent = indentMatch ? indentMatch[1] : "\t\t";
 				content = content.replace(
 					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}"`,
-					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}",\n\t\t"FALLBACK_ORIGIN": "${fallbackOrigin}"`,
+					`"CLOUDFLARE_ZONE_ID": "${config.zoneId}",\n${indent}"FALLBACK_ORIGIN": "${fallbackOrigin}"`,
 				);
 			}
 			modified = true;
@@ -408,10 +414,19 @@ function updateWranglerConfig(config) {
 			// Remove any existing routes entry
 			content = content.replace(/,?\s*"routes"\s*:\s*\[[\s\S]*?\]/g, "");
 
-			const routesSection = `,\n\t"routes": [\n\t\t{ "pattern": "${config.customDomain}/*", "zone_id": "${config.zoneId}" },\n\t\t{ "pattern": "*.${config.customDomain}/*", "zone_id": "${config.zoneId}" }\n\t]`;
+			const topIndentMatch = content.match(/^([ \t]*)"name"/m);
+			const topIndent = topIndentMatch ? topIndentMatch[1] : "\t";
+			const innerIndent = topIndent + (topIndent[0] || "\t");
+			const routesSection = [
+				`,`,
+				`${topIndent}"routes": [`,
+				`${innerIndent}{ "pattern": "${config.customDomain}/*", "zone_id": "${config.zoneId}" },`,
+				`${innerIndent}{ "pattern": "*.${config.customDomain}/*", "zone_id": "${config.zoneId}" }`,
+				`${topIndent}]`,
+			].join("\n");
 
 			// Insert before the closing brace of the main JSON object
-			content = content.replace(/(\n})(\s*)$/, `${routesSection}$1$2`);
+			content = content.replace(/(\n})(\s*)$/, `${routesSection}\n}$2`);
 
 			modified = true;
 			log(green, `✅ Added routes for ${config.customDomain}`);

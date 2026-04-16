@@ -624,9 +624,11 @@ CUSTOM_DOMAIN="${this.config.customDomain}"
 						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
 					);
 				} else {
+					const indentMatch = content.match(/([ \t]*)"CUSTOM_DOMAIN"/);
+					const indent = indentMatch ? indentMatch[1] : "\t\t";
 					content = content.replace(
 						/"CUSTOM_DOMAIN"\s*:\s*"[^"]*"/,
-						`"CUSTOM_DOMAIN": "${this.config.customDomain}",\n\t\t"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
+						`"CUSTOM_DOMAIN": "${this.config.customDomain}",\n${indent}"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
 					);
 				}
 			}
@@ -638,9 +640,11 @@ CUSTOM_DOMAIN="${this.config.customDomain}"
 						`"FALLBACK_ORIGIN": "${this.config.fallbackOrigin}"`,
 					);
 				} else if (this.config.zoneId) {
+					const indentMatch = content.match(/([ \t]*)"CLOUDFLARE_ZONE_ID"/);
+					const indent = indentMatch ? indentMatch[1] : "\t\t";
 					content = content.replace(
 						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}"`,
-						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}",\n\t\t"FALLBACK_ORIGIN": "${this.config.fallbackOrigin}"`,
+						`"CLOUDFLARE_ZONE_ID": "${this.config.zoneId}",\n${indent}"FALLBACK_ORIGIN": "${this.config.fallbackOrigin}"`,
 					);
 				}
 			}
@@ -653,10 +657,19 @@ CUSTOM_DOMAIN="${this.config.customDomain}"
 				// Remove any existing routes entry
 				content = content.replace(/,?\s*"routes"\s*:\s*\[[\s\S]*?\]/g, "");
 
-				const routesSection = `,\n\t"routes": [\n\t\t{ "pattern": "${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" },\n\t\t{ "pattern": "*.${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" }\n\t]`;
+				const topIndentMatch = content.match(/^([ \t]*)"name"/m);
+				const topIndent = topIndentMatch ? topIndentMatch[1] : "\t";
+				const innerIndent = topIndent + (topIndent[0] || "\t");
+				const routesSection = [
+					`,`,
+					`${topIndent}"routes": [`,
+					`${innerIndent}{ "pattern": "${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" },`,
+					`${innerIndent}{ "pattern": "*.${this.config.customDomain}/*", "zone_id": "${this.config.zoneId}" }`,
+					`${topIndent}]`,
+				].join("\n");
 
 				// Insert before the closing brace of the main JSON object
-				content = content.replace(/(\n})(\s*)$/, `${routesSection}$1$2`);
+				content = content.replace(/(\n})(\s*)$/, `${routesSection}\n}$2`);
 
 				log("green", "✅ Added routes for custom domain");
 				this.config.routesAdded = true;
