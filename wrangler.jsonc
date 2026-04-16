@@ -24,14 +24,11 @@
 			"remote": true
 		}
 	],
-	// D1 Database for storing project metadata
 	// D1 Database for storing project metadata, user data, and content
 	// The database will be auto-provisioned during deployment
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "workers-for-platforms-D1",
-			"database_id": "64af0272-43bf-4c18-82b6-0b0a066b18ef"
 			"database_name": "whoscrizzz_db",
 			"database_id": "whoscrizzz_db_production"
 		}
@@ -68,9 +65,6 @@
 		"DATABASE_TYPE": "d1",
 
 		// Dispatch namespace name - must match the namespace above
-		"DISPATCH_NAMESPACE_NAME": "whoscrizzz",
-		// Optional: Your platform's custom domain (e.g., "myplatform.com"). Leave empty to use workers.dev
-		"CUSTOM_DOMAIN": "whoscrizzz.com"
 		"DISPATCH_NAMESPACE_NAME": "whoscrizzz"
 	},
 
@@ -98,7 +92,6 @@
 
 	// Note: FALLBACK_ORIGIN, CLOUDFLARE_ZONE_ID, ACCOUNT_ID, and
 	// DISPATCH_NAMESPACE_API_TOKEN are auto-configured by the setup script
-	"upload_source_maps": true
 	"upload_source_maps": true,
 
 	// Environment-specific overrides
