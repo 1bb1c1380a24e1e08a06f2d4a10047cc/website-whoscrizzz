@@ -25,22 +25,103 @@
 		}
 	],
 	// D1 Database for storing project metadata
+	// D1 Database for storing project metadata, user data, and content
 	// The database will be auto-provisioned during deployment
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "workers-for-platforms-D1",
 			"database_id": "64af0272-43bf-4c18-82b6-0b0a066b18ef"
+			"database_name": "whoscrizzz_db",
+			"database_id": "whoscrizzz_db_production"
+		}
+	],
+	// KV Namespace for caching and temporary storage
+	"kv_namespaces": [
+		{
+			"binding": "KV",
+			"id": "whoscrizzz_kv_production",
+			"preview_id": "whoscrizzz_kv_preview"
+		}
+	],
+	// R2 Bucket for file storage (images, documents, etc.)
+	"r2_buckets": [
+		{
+			"binding": "R2_BUCKET",
+			"bucket_name": "whoscrizzz-files",
+			"preview_bucket_name": "whoscrizzz-files-preview"
 		}
 	],
 	// Environment variables
 	"vars": {
+		// Domain Configuration
+		"DOMAIN": "whoscrizzz.com",
+		"CUSTOM_DOMAIN": "whoscrizzz.com",
+		"ENVIRONMENT": "production",
+
+		// API Configuration
+		"API_BASE_URL": "https://api.whoscrizzz.com",
+		"API_VERSION": "v1",
+		"API_TIMEOUT": "30000",
+
+		// Database
+		"DATABASE_TYPE": "d1",
+
 		// Dispatch namespace name - must match the namespace above
 		"DISPATCH_NAMESPACE_NAME": "whoscrizzz",
 		// Optional: Your platform's custom domain (e.g., "myplatform.com"). Leave empty to use workers.dev
 		"CUSTOM_DOMAIN": "whoscrizzz.com"
+		"DISPATCH_NAMESPACE_NAME": "whoscrizzz"
 	},
+
+	// Secrets (configure via 'wrangler secret put' command)
+	// GitHub OAuth
+	// wrangler secret put GITHUB_CLIENT_ID
+	// wrangler secret put GITHUB_CLIENT_SECRET
+	// wrangler secret put GITHUB_REDIRECT_URI
+
+	// JWT/Authentication
+	// wrangler secret put JWT_SECRET
+
+	// Email Service
+	// wrangler secret put SENDGRID_API_KEY (or EMAIL_API_KEY)
+	// wrangler secret put EMAIL_FROM
+
+	// Claude API
+	// wrangler secret put CLAUDE_API_KEY
+	// wrangler secret put CLAUDE_MODEL
+
+	// Cloudflare API
+	// wrangler secret put CLOUDFLARE_API_TOKEN
+	// wrangler secret put CLOUDFLARE_ZONE_ID
+	// wrangler secret put CLOUDFLARE_ACCOUNT_ID
+
 	// Note: FALLBACK_ORIGIN, CLOUDFLARE_ZONE_ID, ACCOUNT_ID, and
 	// DISPATCH_NAMESPACE_API_TOKEN are auto-configured by the setup script
 	"upload_source_maps": true
+	"upload_source_maps": true,
+
+	// Environment-specific overrides
+	"env": {
+		"development": {
+			"vars": {
+				"ENVIRONMENT": "development",
+				"API_BASE_URL": "http://localhost:8787",
+				"CUSTOM_DOMAIN": "localhost"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "whoscrizzz_db_dev",
+					"database_id": "whoscrizzz_db_dev"
+				}
+			]
+		},
+		"staging": {
+			"vars": {
+				"ENVIRONMENT": "staging",
+				"API_BASE_URL": "https://staging-api.whoscrizzz.com"
+			}
+		}
+	}
 }
