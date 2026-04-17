@@ -33,12 +33,25 @@
 			"database_id": "whoscrizzz_db_production"
 		}
 	],
-	// KV Namespace for caching and temporary storage
-	"kv_namespaces": [
-		{
-			"binding": "KV",
-			"id": "whoscrizzz_kv_production",
-			"preview_id": "whoscrizzz_kv_preview"
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "WORKER-NAME",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-02-04",
+  "observability": {
+    "enabled": true
+  },
+	//KV
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "55b2d820ff6f4ea2ae845cbdc7663c5c",
+      
+      // Optional: preview_id used when running `wrangler dev` for local dev
+      "preview_id": "<ID_OF_PREVIEW_KV_NAMESPACE_FOR_LOCAL_DEVELOPMENT>"
+    }
+  ]
+}
 		}
 	],
 	// R2 Bucket for file storage (images, documents, etc.)
