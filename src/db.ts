@@ -111,7 +111,7 @@ export async function DeleteProject(
 	await db.delete({
 		tableName: "projects",
 		where: {
-			conditions: "projects.subdomain IS ?",
+			conditions: "projects.subdomain = ?",
 			params: [subdomain],
 		},
 	});

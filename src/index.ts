@@ -227,7 +227,7 @@ app.get("/", withDbAndInit, async (c) => {
 	try {
 		projects = await GetAllProjects(c.var.db);
 	} catch {
-		// DB not yet initialised — show empty listing; the auto-init middleware
+		// DB not yet initialized — show empty listing; the auto-init middleware
 		// will create the schema on the first project-creation request.
 	}
 	const body = BuildWebsitePage + BuildProjectList(projects, customDomain);
@@ -497,7 +497,7 @@ app.get("/admin", withDbAndInit, async (c) => {
   }
 
   async function deleteProject(subdomain) {
-    if (!confirm('Delete "' + subdomain + '"? This will permanently remove the project from the database and the dispatch namespace. This cannot be undone.')) return;
+    if (!confirm(\`Delete "\${subdomain}"? This will permanently remove the project from the database and the dispatch namespace. This cannot be undone.\`)) return;
     try {
       const response = await fetch('/projects/' + subdomain, { method: 'DELETE' });
       if (response.ok) {
@@ -861,7 +861,9 @@ app.put("/projects/:subdomain", withDbAndInit, async (c) => {
 			return c.text("Failed to redeploy website. Please try again.", 500);
 		}
 
-		// Persist updated script content to D1
+		// Persist a small placeholder (not the full code) to D1 to avoid bloating
+		// the database — the authoritative copy is already in the dispatch namespace.
+		// For short scripts we store the full content so the edit form can pre-populate.
 		const scriptPlaceholder =
 			script_content.length > 1000
 				? `/* Script redeployed to dispatch namespace — ${script_content.length} bytes */`
