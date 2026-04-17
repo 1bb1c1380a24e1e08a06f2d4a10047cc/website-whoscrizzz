@@ -2,6 +2,7 @@
 // Licensed under the APACHE LICENSE, VERSION 2.0 license found in the LICENSE file or at http://www.apache.org/licenses/LICENSE-2.0
 
 import { ResourceValues } from "./types";
+import type { Project } from "./types";
 
 function ResourceValueToString(value: ResourceValues, columnName?: string) {
 	if (value == null) return "null";
@@ -2211,3 +2212,52 @@ async function checkDomainStatus(subdomain, customHostname, workerUrl) {
 }
 </script>
 `;
+
+/**
+ * Renders a listing of all currently deployed sites below the creation form
+ * on the homepage.  When no projects exist the section is omitted entirely.
+ */
+export function BuildProjectList(
+	projects: Project[],
+	customDomain?: string,
+): string {
+	if (!projects.length) {
+		return "";
+	}
+
+	const rows = projects
+		.map((p) => {
+			const url = customDomain
+				? `https://${escapeHtml(p.subdomain)}.${escapeHtml(customDomain)}`
+				: `/${escapeHtml(p.subdomain)}`;
+			const label = customDomain
+				? `${escapeHtml(p.subdomain)}.${escapeHtml(customDomain)}`
+				: `/${escapeHtml(p.subdomain)}`;
+			return `
+      <tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td>
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="table-link">${label}</a>
+        </td>
+        <td>${p.custom_hostname ? `<a href="https://${escapeHtml(p.custom_hostname)}" target="_blank" rel="noopener noreferrer" class="table-link">${escapeHtml(p.custom_hostname)}</a>` : "-"}</td>
+        <td style="color: var(--kumo-muted-foreground); font-size: 12px;">${escapeHtml(new Date(p.created_on).toLocaleDateString())}</td>
+      </tr>`;
+		})
+		.join("");
+
+	return `
+<div class="form-container" style="margin-top: 20px;">
+  <div class="success-card-label" style="margin-bottom: 16px;">Deployed Sites</div>
+  <div class="dataContainer" style="margin-bottom: 0;">
+    <table class="dataTable">
+      <tr>
+        <th>Name</th>
+        <th>URL</th>
+        <th>Custom Domain</th>
+        <th>Created</th>
+      </tr>
+      ${rows}
+    </table>
+  </div>
+</div>`;
+}

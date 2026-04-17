@@ -13,12 +13,8 @@ export async function Initialize(db: D1QB) {
 		},
 	];
 
-	for (const table of tables) {
-		await db.dropTable({
-			tableName: table.name,
-			ifExists: true,
-		});
-	}
+	// Only create tables if they don't already exist — this is intentionally
+	// idempotent so calling /init multiple times is safe and does not destroy data.
 	for (const table of tables) {
 		await db.createTable({
 			tableName: table.name,
@@ -98,10 +94,25 @@ export async function UpdateProject(
 ) {
 	return db.update({
 		tableName: "projects",
+		// workers-qb requires Record<string, string>; the cast is necessary
+		// because our Project fields include null/undefined values.
 		data: updates as unknown as Record<string, string>,
 		where: {
 			conditions: "projects.id IS ?",
 			params: [projectId],
+		},
+	});
+}
+
+export async function DeleteProject(
+	db: D1QB,
+	subdomain: string,
+): Promise<void> {
+	await db.delete({
+		tableName: "projects",
+		where: {
+			conditions: "projects.subdomain IS ?",
+			params: [subdomain],
 		},
 	});
 }

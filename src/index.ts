@@ -29,6 +29,9 @@ import {
 	CreateProject,
 	GetProjectBySubdomain,
 	GetProjectByCustomHostname,
+	GetAllProjects,
+	UpdateProject,
+	DeleteProject,
 } from "./db";
 import type { Env } from "./env";
 import {
@@ -40,54 +43,48 @@ import {
 	checkEnvConfig,
 } from "./resource";
 import { handleDispatchError, withDb } from "./router";
-import { renderPage, BuildTable, BuildWebsitePage } from "./render";
+import { renderPage, BuildTable, BuildWebsitePage, BuildProjectList } from "./render";
 import { Project } from "./types";
 import {
 	createCustomHostname,
 	getCustomHostnameStatus,
+	deleteCustomHostname,
 } from "./cloudflare-api";
 import { D1QB } from "workers-qb";
 
 // Initialize Hono app with type-safe environment bindings
 const app = new Hono<{ Bindings: Env }>();
 
-// Track database initialization state across requests in this Worker instance
+/**
+ * Per-worker-instance flag that tracks whether the database schema has been
+ * verified on this particular isolate.  Cloudflare Workers can run many
+ * concurrent isolates; each one will check the schema exactly once after a
+ * cold start, then skip the check for all subsequent requests within that
+ * isolate's lifetime.  This means a brand-new isolate will re-check the
+ * schema, but the check is a fast no-op when the table already exists.
+ */
 let isInitialized = false;
 
 /**
- * Automatically initialize database schema on first request
+ * Automatically initialize database schema on first request within this
+ * Worker instance.  Uses `Initialize()` which runs `CREATE TABLE IF NOT EXISTS`,
+ * so it is always safe to call even if the schema already exists.
+ *
+ * If initialization fails (e.g., transient error), the flag is NOT set so the
+ * next request will retry — preventing a failed cold-start from permanently
+ * disabling the auto-init for the lifetime of the isolate.
  */
 async function autoInitializeDatabase(db: D1QB): Promise<void> {
 	if (isInitialized) {
-		return; // Already initialized in this worker instance
+		return; // Already initialised in this Worker instance
 	}
 
 	try {
-		// Check if projects table exists by trying to query it
-		const tableCheck = await db.fetchOne({
-			tableName: "sqlite_master",
-			fields: "name",
-			where: {
-				conditions: "type = ? AND name = ?",
-				params: ["table", "projects"],
-			},
-		});
-
-		if (!tableCheck.results) {
-			// Create projects table
-			await db.createTable({
-				tableName: "projects",
-				schema:
-					"id TEXT PRIMARY KEY, name TEXT NOT NULL, subdomain TEXT UNIQUE NOT NULL, custom_hostname TEXT, script_content TEXT NOT NULL, created_on TEXT NOT NULL, modified_on TEXT NOT NULL",
-				ifNotExists: true,
-			});
-		}
-
+		await Initialize(db);
 		isInitialized = true;
 	} catch (error) {
-		// Don't throw - let the app continue, it might work anyway
-		// Set flag to true to avoid repeated attempts
-		isInitialized = true;
+		// Log but do NOT set isInitialized — let the next request retry
+		console.error("Failed to auto-initialize database:", error);
 	}
 }
 
@@ -222,15 +219,30 @@ app.get("/favicon.ico", () => {
 });
 
 /*
- * Main page - Build a website interface
+ * Main page - Build a website interface with a listing of existing sites
  */
-app.get("/", (c) => {
+app.get("/", withDbAndInit, async (c) => {
 	const customDomain = c.env.CUSTOM_DOMAIN;
-	return c.html(renderPage(BuildWebsitePage, { customDomain }));
+	let projects: Project[] = [];
+	try {
+		projects = await GetAllProjects(c.var.db);
+	} catch {
+		// DB not yet initialised — show empty listing; the auto-init middleware
+		// will create the schema on the first project-creation request.
+	}
+	const body = BuildWebsitePage + BuildProjectList(projects, customDomain);
+	return c.html(renderPage(body, { customDomain }));
 });
 
 /*
- * Admin page - For debugging/management (hidden)
+ * Admin page - For debugging/management
+ *
+ * IMPORTANT: This page shows all projects and sensitive deployment data.
+ * Protect it with Cloudflare Access to restrict who can view it:
+ *   1. Go to Zero Trust → Access → Applications
+ *   2. Add an application for `<your-domain>/admin*`
+ *   3. Configure an authentication policy (e.g. email allowlist or IdP)
+ * See: https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/self-hosted-apps/
  */
 app.get("/admin", withDbAndInit, async (c) => {
 	let body = `
@@ -365,7 +377,7 @@ app.get("/admin", withDbAndInit, async (c) => {
 				const rowId = `row-${subdomain}`;
 
 				body += `
-          <tr>
+          <tr id="project-row-${subdomain}">
             <td>${project.name}</td>
             <td><a href="${c.env.CUSTOM_DOMAIN ? `https://${subdomain}.${c.env.CUSTOM_DOMAIN}` : `https://${subdomain}.workers.dev`}" target="_blank" class="table-link">${subdomain}</a></td>
             <td>${customHostname !== "-" ? `<a href="https://${customHostname}" target="_blank" class="table-link">${customHostname}</a>` : "-"}</td>
@@ -390,12 +402,29 @@ app.get("/admin", withDbAndInit, async (c) => {
 							}
             </td>
             <td>
-              ${customHostname !== "-" ? `<button type="button" class="btn-icon" onclick="refreshStatus('${subdomain}')" title="Refresh status" id="refresh-${subdomain}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64A81.59,81.59,0,0,0,46.37,90.32a8,8,0,1,1-14.54-6.64A97.49,97.49,0,0,1,128,32a98.33,98.33,0,0,1,69.07,28.94L224,84.07V56a8,8,0,0,1,16,0Zm-32.16,109.68a81.65,81.65,0,0,1-138.45,18.68L44.6,160H72a8,8,0,0,0,0-16H24a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V171.93l26.94,24.13A97.51,97.51,0,0,0,225.54,172.32a8,8,0,0,0-14.54-6.64Z"/></svg></button>` : "-"}
+              <div style="display: flex; gap: 4px; align-items: center;">
+                ${customHostname !== "-" ? `<button type="button" class="btn-icon" onclick="refreshStatus('${subdomain}')" title="Refresh status" id="refresh-${subdomain}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64A81.59,81.59,0,0,0,46.37,90.32a8,8,0,1,1-14.54-6.64A97.49,97.49,0,0,1,128,32a98.33,98.33,0,0,1,69.07,28.94L224,84.07V56a8,8,0,0,1,16,0Zm-32.16,109.68a81.65,81.65,0,0,1-138.45,18.68L44.6,160H72a8,8,0,0,0,0-16H24a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V171.93l26.94,24.13A97.51,97.51,0,0,0,225.54,172.32a8,8,0,0,0-14.54-6.64Z"/></svg></button>` : ""}
+                <button type="button" class="btn-icon" onclick="toggleEditRow('${subdomain}')" title="Edit / Redeploy"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/></svg></button>
+                <button type="button" class="btn-icon" onclick="deleteProject('${subdomain}')" title="Delete project" style="color: var(--kumo-destructive);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg></button>
+              </div>
+            </td>
+          </tr>
+          <tr id="edit-row-${subdomain}" style="display: none;">
+            <td colspan="6" style="padding: 16px; background: var(--kumo-surface-secondary);">
+              <form onsubmit="redeployProject(event, '${subdomain}')">
+                <div style="margin-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--kumo-muted-foreground); text-transform: uppercase; letter-spacing: 0.05em;">New Worker Code</div>
+                <textarea id="edit-script-${subdomain}" rows="8" style="width: 100%; padding: 10px 12px; border: 1px solid var(--kumo-border); border-radius: var(--radius-md); font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5; resize: vertical; background: var(--kumo-surface); color: var(--kumo-surface-foreground);" placeholder="Enter new Worker script to redeploy..."></textarea>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                  <button type="submit" class="btn btn-sm btn-primary">Redeploy</button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="toggleEditRow('${subdomain}')">Cancel</button>
+                </div>
+                <div id="edit-result-${subdomain}" style="margin-top: 8px;"></div>
+              </form>
             </td>
           </tr>`;
-			}
+		}
 
-			body += `</table></div>`;
+		body += `</table></div>`;
 		} else {
 			body += `
         <div class="banner banner-info">
@@ -459,6 +488,58 @@ app.get("/admin", withDbAndInit, async (c) => {
     // Reload the page to refresh all statuses
     window.location.reload();
   }
+
+  function toggleEditRow(subdomain) {
+    const row = document.getElementById('edit-row-' + subdomain);
+    if (row) {
+      row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    }
+  }
+
+  async function deleteProject(subdomain) {
+    if (!confirm('Delete "' + subdomain + '"? This will permanently remove the project from the database and the dispatch namespace. This cannot be undone.')) return;
+    try {
+      const response = await fetch('/projects/' + subdomain, { method: 'DELETE' });
+      if (response.ok) {
+        // Remove both the data row and the edit row from the DOM
+        const dataRow = document.getElementById('project-row-' + subdomain);
+        const editRow = document.getElementById('edit-row-' + subdomain);
+        if (dataRow) dataRow.remove();
+        if (editRow) editRow.remove();
+      } else {
+        const text = await response.text();
+        alert('Failed to delete project: ' + text);
+      }
+    } catch (err) {
+      alert('Error deleting project: ' + err.message);
+    }
+  }
+
+  async function redeployProject(event, subdomain) {
+    event.preventDefault();
+    const scriptContent = document.getElementById('edit-script-' + subdomain).value.trim();
+    const resultDiv = document.getElementById('edit-result-' + subdomain);
+    if (!scriptContent) {
+      resultDiv.innerHTML = '<span style="color: var(--kumo-text-error); font-size: 12px;">Please enter new Worker code.</span>';
+      return;
+    }
+    resultDiv.innerHTML = '<span style="color: var(--kumo-muted-foreground); font-size: 12px;">Redeploying...</span>';
+    try {
+      const response = await fetch('/projects/' + subdomain, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script_content: scriptContent })
+      });
+      const text = await response.text();
+      if (response.ok) {
+        resultDiv.innerHTML = '<span style="color: var(--kumo-success); font-size: 12px;">✓ Redeployed successfully.</span>';
+      } else {
+        resultDiv.innerHTML = '<span style="color: var(--kumo-text-error); font-size: 12px;">Error: ' + text + '</span>';
+      }
+    } catch (err) {
+      resultDiv.innerHTML = '<span style="color: var(--kumo-text-error); font-size: 12px;">Network error: ' + err.message + '</span>';
+    }
+  }
   </script>`;
 
 	return c.html(renderPage(body, { customDomain: c.env.CUSTOM_DOMAIN }));
@@ -519,14 +600,35 @@ app.post("/projects", withDbAndInit, async (c) => {
 			return c.text("Missing required fields: name, subdomain", 400);
 		}
 
+		// Validate name length
+		if (name.length > 100) {
+			return c.text("Website name must be 100 characters or fewer", 400);
+		}
+
 		if (!script_content && (!assets || assets.length === 0)) {
 			return c.text("Missing required fields: script_content or assets", 400);
 		}
 
-		// Validate subdomain format
+		// Validate subdomain format — DNS labels are max 63 characters
 		if (!/^[a-z0-9-]+$/.test(subdomain)) {
 			return c.text(
 				"Subdomain must only contain lowercase letters, numbers, and hyphens",
+				400,
+			);
+		}
+		if (subdomain.length > 63) {
+			return c.text("Subdomain must be 63 characters or fewer", 400);
+		}
+
+		// Validate optional custom hostname format
+		if (
+			custom_hostname &&
+			!/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(
+				custom_hostname,
+			)
+		) {
+			return c.text(
+				"Custom domain must be a valid hostname (e.g. mystore.com)",
 				400,
 			);
 		}
@@ -685,9 +787,97 @@ app.get(
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
+			console.error("GET /projects/:subdomain/custom-domain-status error:", errorMessage, error);
 			return c.text(`Internal server error: ${errorMessage}`, 500);
 		}
 	},
 );
+
+/**
+ * Delete a project — removes the Worker from the dispatch namespace,
+ * cleans up any custom hostname, and deletes the record from D1.
+ *
+ * Dispatch namespace and custom-hostname deletions are best-effort:
+ * failures are logged but do not prevent the D1 record from being removed.
+ */
+app.delete("/projects/:subdomain", withDbAndInit, async (c) => {
+	try {
+		const subdomain = c.req.param("subdomain");
+		const project = await GetProjectBySubdomain(c.var.db, subdomain);
+		if (!project) {
+			return c.text("Project not found", 404);
+		}
+
+		// Remove from dispatch namespace (best-effort)
+		await DeleteScriptInDispatchNamespace(c.env, subdomain).catch((err) =>
+			console.error(`DELETE /projects/${subdomain}: dispatch namespace removal failed:`, err),
+		);
+
+		// Remove custom hostname (best-effort)
+		if (project.custom_hostname) {
+			await deleteCustomHostname(c.env, project.custom_hostname).catch((err) =>
+				console.error(`DELETE /projects/${subdomain}: custom hostname removal failed:`, err),
+			);
+		}
+
+		// Remove from D1
+		await DeleteProject(c.var.db, subdomain);
+
+		return c.text("Project deleted", 200);
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		console.error("DELETE /projects/:subdomain error:", errorMessage, error);
+		return c.text(`Internal server error: ${errorMessage}`, 500);
+	}
+});
+
+/**
+ * Update and redeploy an existing project's Worker script.
+ * Only code-based (script_content) redeployment is supported here;
+ * static-asset sites must be re-uploaded via the creation form.
+ */
+app.put("/projects/:subdomain", withDbAndInit, async (c) => {
+	try {
+		const subdomain = c.req.param("subdomain");
+		const project = await GetProjectBySubdomain(c.var.db, subdomain);
+		if (!project) {
+			return c.text("Project not found", 404);
+		}
+
+		const { script_content } = await c.req.json();
+		if (!script_content) {
+			return c.text("Missing required field: script_content", 400);
+		}
+
+		// Redeploy to dispatch namespace
+		const deployResult = await PutScriptInDispatchNamespace(
+			c.env,
+			subdomain,
+			script_content,
+		);
+		if (!deployResult.ok) {
+			const errorBody = await deployResult.text().catch(() => "unknown error");
+			console.error(`PUT /projects/${subdomain}: deploy failed (${deployResult.status}): ${errorBody}`);
+			return c.text("Failed to redeploy website. Please try again.", 500);
+		}
+
+		// Persist updated script content to D1
+		const scriptPlaceholder =
+			script_content.length > 1000
+				? `/* Script redeployed to dispatch namespace — ${script_content.length} bytes */`
+				: script_content;
+
+		await UpdateProject(c.var.db, project.id, {
+			script_content: scriptPlaceholder,
+			modified_on: new Date().toISOString(),
+		});
+
+		return c.text("Project updated successfully", 200);
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		console.error("PUT /projects/:subdomain error:", errorMessage, error);
+		return c.text(`Internal server error: ${errorMessage}`, 500);
+	}
+});
 
 export default app;

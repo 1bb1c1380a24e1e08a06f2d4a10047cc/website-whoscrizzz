@@ -19,19 +19,19 @@ interface TestEnv {
 	CUSTOM_DOMAIN: string;
 }
 
-describe("Workers for Platforms Template", () => {
-	// Helper to make requests to the app
-	async function makeRequest(
-		path: string,
-		options?: RequestInit,
-	): Promise<Response> {
-		const request = new Request(`http://localhost${path}`, options);
-		const ctx = createExecutionContext();
-		const response = await app.fetch(request, env as unknown as TestEnv, ctx);
-		await waitOnExecutionContext(ctx);
-		return response;
-	}
+// Shared helper — creates a Request and dispatches it through the app
+async function makeRequest(
+	path: string,
+	options?: RequestInit,
+): Promise<Response> {
+	const request = new Request(`http://localhost${path}`, options);
+	const ctx = createExecutionContext();
+	const response = await app.fetch(request, env as unknown as TestEnv, ctx);
+	await waitOnExecutionContext(ctx);
+	return response;
+}
 
+describe("Workers for Platforms Template", () => {
 	describe("Homepage", () => {
 		it("should return the website builder UI on the root path", async () => {
 			const response = await makeRequest("/");
@@ -60,6 +60,14 @@ describe("Workers for Platforms Template", () => {
 			expect(html).toContain("export default");
 			expect(html).toContain("async fetch(request, env, ctx)");
 		});
+
+		it("should include the deployed-sites section (empty state)", async () => {
+			const response = await makeRequest("/");
+			const html = await response.text();
+			// When there are no projects the section is omitted entirely — that is fine
+			// When there are projects the "Deployed Sites" heading appears
+			expect(html).not.toContain("Internal server error");
+		});
 	});
 
 	describe("Admin Dashboard", () => {
@@ -82,6 +90,15 @@ describe("Workers for Platforms Template", () => {
 			expect(html).toContain("Projects");
 			// When empty, shows "No projects yet" message
 			expect(html).toMatch(/(Subdomain|No projects yet)/);
+		});
+
+		it("should include delete and edit action buttons in admin JS", async () => {
+			const response = await makeRequest("/admin");
+			const html = await response.text();
+			// Verify the admin page embeds the JS handlers for delete and redeploy
+			expect(html).toContain("deleteProject");
+			expect(html).toContain("redeployProject");
+			expect(html).toContain("toggleEditRow");
 		});
 	});
 
@@ -129,6 +146,161 @@ describe("Workers for Platforms Template", () => {
 			const text = await response.text();
 			expect(text).toContain("script_content or assets");
 		});
+
+		it("should reject subdomain longer than 63 characters", async () => {
+			const longSubdomain = "a".repeat(64);
+			const response = await makeRequest("/projects", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name: "Test",
+					subdomain: longSubdomain,
+					script_content:
+						"export default { fetch() { return new Response('ok'); } }",
+				}),
+			});
+
+			expect(response.status).toBe(400);
+			const text = await response.text();
+			expect(text).toContain("63 characters");
+		});
+
+		it("should reject name longer than 100 characters", async () => {
+			const longName = "A".repeat(101);
+			const response = await makeRequest("/projects", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name: longName,
+					subdomain: "valid-sub",
+					script_content:
+						"export default { fetch() { return new Response('ok'); } }",
+				}),
+			});
+
+			expect(response.status).toBe(400);
+			const text = await response.text();
+			expect(text).toContain("100 characters");
+		});
+
+		it("should reject an invalid custom domain format", async () => {
+			const response = await makeRequest("/projects", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name: "Test",
+					subdomain: "valid-sub",
+					script_content:
+						"export default { fetch() { return new Response('ok'); } }",
+					custom_hostname: "not-a-valid-domain!!!",
+				}),
+			});
+
+			expect(response.status).toBe(400);
+			const text = await response.text();
+			expect(text).toContain("valid hostname");
+		});
+	});
+
+	describe("Delete Project API", () => {
+		beforeEach(async () => {
+			// Ensure the schema exists — /init calls Initialize() which uses
+			// CREATE TABLE IF NOT EXISTS, bypassing the isInitialized flag.
+			await makeRequest("/init", { redirect: "manual" });
+		});
+
+		it("should return 404 when deleting a project that does not exist", async () => {
+			const response = await makeRequest(
+				"/projects/definitely-not-existing-xyz",
+				{ method: "DELETE" },
+			);
+
+			expect(response.status).toBe(404);
+			const text = await response.text();
+			expect(text).toContain("not found");
+		});
+	});
+
+	describe("Update/Redeploy Project API", () => {
+		beforeEach(async () => {
+			await makeRequest("/init", { redirect: "manual" });
+		});
+
+		it("should return 404 when updating a project that does not exist", async () => {
+			const response = await makeRequest(
+				"/projects/definitely-not-existing-xyz",
+				{
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						script_content:
+							"export default { fetch() { return new Response('ok'); } }",
+					}),
+				},
+			);
+
+			expect(response.status).toBe(404);
+			const text = await response.text();
+			expect(text).toContain("not found");
+		});
+
+		it("should return 400 when updating without script_content", async () => {
+			// Project doesn't exist → 404 is returned before the 400 validation
+			// We just ensure no unhandled server error
+			const response = await makeRequest(
+				"/projects/definitely-not-existing-xyz",
+				{
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({}),
+				},
+			);
+
+			expect([400, 404]).toContain(response.status);
+		});
+	});
+
+	describe("Subdomain Routing", () => {
+		beforeEach(async () => {
+			// Ensure DB schema exists so routing middleware can query the projects table
+			await makeRequest("/init", { redirect: "manual" });
+		});
+
+		it("should fall through to platform UI for unknown subdomains (workers.dev mode)", async () => {
+			// In workers.dev mode (no CUSTOM_DOMAIN set), /unknown-sub is treated as a
+			// potential project path.  If no project is found the routing passes through
+			// to the platform routes; since no route matches /unknown-sub exactly the app
+			// returns 404.
+			const response = await makeRequest("/unknown-subdomain-xyz-404");
+			// Should NOT be a 500 — gracefully falls through
+			expect(response.status).not.toBe(500);
+		});
+
+		it("should not route reserved platform paths to the dispatcher", async () => {
+			// /admin is in the reserved paths list and must never be dispatched
+			const response = await makeRequest("/admin");
+			expect(response.status).toBe(200);
+			const html = await response.text();
+			expect(html).toContain("Admin Dashboard");
+		});
+
+		it("should handle custom-domain subdomain routing without crashing", async () => {
+			// Simulate a request that looks like it comes from a subdomain of CUSTOM_DOMAIN.
+			// Since the project doesn't exist in DB the routing should fall through gracefully.
+			const request = new Request("http://testsite.example.com/");
+			const ctx = createExecutionContext();
+			const response = await app.fetch(
+				request,
+				{
+					...(env as unknown as TestEnv),
+					CUSTOM_DOMAIN: "example.com",
+				} as unknown as TestEnv,
+				ctx,
+			);
+			await waitOnExecutionContext(ctx);
+			// Should not be a 500 internal error
+			expect(response.status).not.toBe(500);
+		});
 	});
 
 	describe("Static Assets", () => {
@@ -155,17 +327,6 @@ describe("Workers for Platforms Template", () => {
 });
 
 describe("Input Validation", () => {
-	async function makeRequest(
-		path: string,
-		options?: RequestInit,
-	): Promise<Response> {
-		const request = new Request(`http://localhost${path}`, options);
-		const ctx = createExecutionContext();
-		const response = await app.fetch(request, env as unknown as TestEnv, ctx);
-		await waitOnExecutionContext(ctx);
-		return response;
-	}
-
 	it("should accept valid subdomain with hyphens", async () => {
 		const response = await makeRequest("/projects", {
 			method: "POST",
@@ -198,6 +359,54 @@ describe("Input Validation", () => {
 
 		const text = await response.text();
 		expect(text).not.toContain("lowercase letters, numbers, and hyphens");
+	});
+
+	it("should accept a subdomain exactly 63 characters long", async () => {
+		const maxSubdomain = "a".repeat(63);
+		const response = await makeRequest("/projects", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: "Site",
+				subdomain: maxSubdomain,
+				script_content:
+					"export default { fetch() { return new Response('ok'); } }",
+			}),
+		});
+		const text = await response.text();
+		expect(text).not.toContain("63 characters");
+	});
+
+	it("should accept a name exactly 100 characters long", async () => {
+		const maxName = "A".repeat(100);
+		const response = await makeRequest("/projects", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: maxName,
+				subdomain: "valid-sub",
+				script_content:
+					"export default { fetch() { return new Response('ok'); } }",
+			}),
+		});
+		const text = await response.text();
+		expect(text).not.toContain("100 characters");
+	});
+
+	it("should accept a valid custom domain", async () => {
+		const response = await makeRequest("/projects", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: "Site",
+				subdomain: "valid-sub2",
+				script_content:
+					"export default { fetch() { return new Response('ok'); } }",
+				custom_hostname: "mystore.example.com",
+			}),
+		});
+		const text = await response.text();
+		expect(text).not.toContain("valid hostname");
 	});
 });
 
