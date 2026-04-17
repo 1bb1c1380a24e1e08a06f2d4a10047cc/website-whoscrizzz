@@ -1191,14 +1191,14 @@ export const renderPage = (
 ) => `
 <!DOCTYPE html><html>
 <head>
-  <title>Build a Website</title>
+  <title>whoscrizzz – Build a Website</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
   <style>${CSS}</style>
 </head>
 <body>
 <div class="header">
-  <h1>Build a Website</h1>
-  <p>Create and deploy your website instantly</p>
+  <h1>whoscrizzz</h1>
+  <p>Build and deploy your website on whoscrizzz.com</p>
 </div>
 ${body}
 <script>
