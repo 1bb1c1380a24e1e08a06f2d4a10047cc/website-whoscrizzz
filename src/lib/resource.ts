@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Cloudflare, Inc.
 // Licensed under the APACHE LICENSE, VERSION 2.0 license found in the LICENSE file or at http://www.apache.org/licenses/LICENSE-2.0
 
-import { Env } from "./env";
+import { Env } from "../env";
 
 const BaseURI = (env: Env) =>
 	`https://api.cloudflare.com/client/v4/accounts/${env.ACCOUNT_ID}/workers`;

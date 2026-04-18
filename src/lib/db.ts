@@ -2,7 +2,7 @@
 // Licensed under the APACHE LICENSE, VERSION 2.0 license found in the LICENSE file or at http://www.apache.org/licenses/LICENSE-2.0
 
 import { D1QB } from "workers-qb";
-import { ResourceRecord, Project } from "./types";
+import { ResourceRecord, Project } from "../types";
 
 export async function Initialize(db: D1QB) {
 	const tables: { name: string; schema: string }[] = [

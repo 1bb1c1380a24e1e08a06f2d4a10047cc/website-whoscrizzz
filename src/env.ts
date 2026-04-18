@@ -19,6 +19,8 @@ export type Env = {
 	FALLBACK_ORIGIN?: string;
 	// Optional: API token with SSL permissions for custom hostname support
 	CLOUDFLARE_API_TOKEN?: string;
+	// Auto-assigned workers.dev subdomain (e.g., "my-worker" in my-worker.workers.dev)
+	WORKERS_DEV_SUBDOMAIN?: string;
 };
 
 interface Dispatcher {
