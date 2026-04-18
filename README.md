@@ -1,8 +1,8 @@
-# Website Builder
+# whoscrizzz – Website Builder
 
-Build your own website hosting platform using [Cloudflare Workers for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/). Users can create and deploy websites through a simple web interface.
+Build and host your website on [whoscrizzz.com](https://whoscrizzz.com) using [Cloudflare Workers for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/). Users can create and deploy websites through a simple web interface.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/workers-for-platforms-template)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/whoscrizzz/website-whoscrizzz)
 
 ![Preview](preview.png)
 
@@ -76,8 +76,8 @@ If you want to use your own domain instead of `*.workers.dev`:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cloudflare/templates.git
-cd templates/workers-for-platforms-template
+git clone https://github.com/whoscrizzz/website-whoscrizzz.git
+cd website-whoscrizzz
 
 # Install dependencies
 npm install

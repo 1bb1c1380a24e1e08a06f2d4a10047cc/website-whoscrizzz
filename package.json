@@ -1,124 +1,124 @@
 {
-	"name": "website-whoscrizzz",
-	"private": true,
-	"description": "Build your own website hosting platform with Workers for Platforms. Users can create and deploy sites through a simple web interface.",
-	"version": "1.0.0",
-	"license": "Apache-2.0",
-	"type": "module",
-	"engines": {
-		"node": ">=18"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.5.30",
-		"@cloudflare/workers-types": "^4.20241205.0",
-		"@types/node": "^20.11.0",
-		"@types/jsonwebtoken": "^9.0.7",
-		"@types/nodemailer": "^6.4.14",
-		"@typescript-eslint/eslint-plugin": "^6.15.0",
-		"@typescript-eslint/parser": "^6.15.0",
-		"eslint": "^8.56.0",
-		"typescript": "^5.3.3",
-		"ts-node": "^10.9.2",
-		"vitest": "^2.1.8",
-		"wrangler": "^3.99.0"
-	},
-	"scripts": {
-		"dev": "wrangler dev --remote",
-		"build": "node scripts/setup-quick.js",
-		"deploy": "wrangler deploy && node scripts/setup-quick.js --set-secrets",
-		"setup": "node scripts/setup.js",
-		"setup:quick": "node scripts/setup-quick.js",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"type-check": "tsc --noEmit",
-		"lint": "eslint src --ext .ts",
-		"mcp:build": "tsc -p tsconfig.mcp.json",
-		"mcp:inspect": "node --loader ts-node/esm src/mcp/inspector.ts"
-	},
-	"dependencies": {
-		"hono": "^4.2.1",
-		"workers-qb": "^0.1.1",
-		"@anthropic-sdk/sdk": "^0.20.0",
-		"@cloudflare/workers-types": "^4.20241205.0",
-		"@octokit/rest": "^21.0.2",
-		"@sendgrid/mail": "^8.1.0",
-		"axios": "^1.7.7",
-		"drizzle-orm": "^0.30.10",
-		"drizzle-zod": "^0.5.1",
-		"dotenv": "^16.3.1",
-		"jsonwebtoken": "^9.1.2",
-		"nodemailer": "^6.9.10",
-		"passport": "^0.7.0",
-		"passport-github2": "^0.1.12",
-		"uuid": "^9.0.1",
-		"zod": "^3.22.4",
-		"date-fns": "^3.0.0"
-	},
-	"cloudflare": {
-		"label": "Website Builder - whoscrizzz.com",
-		"products": [
-			"Workers",
-			"Workers for Platforms",
-			"D1",
-			"KV",
-			"R2",
-			"Email Routing"
-		],
-		"categories": [
-			"starter"
-		],
-		"preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/7ee998bb-6d98-43ab-dd7f-3f2d85a89c00/public",
-		"preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/0c5e578d-ad97-4efa-fb3d-f8f4ac7e1700/preview",
-		"publish": true,
-		"bindings": {
-			"DB": {
-				"type": "d1",
-				"id": "whoscrizzz_db",
-				"preview_id": "whoscrizzz_db_preview"
-			},
-			"KV": {
-				"type": "kv_namespace",
-				"id": "whoscrizzz_kv",
-				"preview_id": "whoscrizzz_kv_preview"
-			},
-			"R2_BUCKET": {
-				"type": "r2",
-				"bucket_name": "whoscrizzz-files",
-				"preview_bucket_name": "whoscrizzz-files-preview"
-			},
-			"CUSTOM_DOMAIN": {
-				"description": "(Optional) Your platform's domain, e.g. `whoscrizzz.com`. Leave empty to use workers.dev"
-			},
-			"CLOUDFLARE_API_TOKEN": {
-				"description": "(Optional) API token with **SSL and Certificates Edit** permission for custom domain support. [Create token](https://dash.cloudflare.com/profile/api-tokens)"
-			},
-			"GITHUB_CLIENT_ID": {
-				"description": "GitHub OAuth Client ID for authentication"
-			},
-			"GITHUB_CLIENT_SECRET": {
-				"description": "GitHub OAuth Client Secret"
-			},
-			"CLAUDE_API_KEY": {
-				"description": "Anthropic Claude API key for Claude integrations"
-			},
-			"SENDGRID_API_KEY": {
-				"description": "SendGrid API key for email notifications"
-			}
-		}
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/whoscrizzz/website-whoscrizzz.git"
-	},
-	"keywords": [
-		"cloudflare",
-		"workers",
-		"website-builder",
-		"d1",
-		"typescript",
-		"hono",
-		"github-integration",
-		"claude-ai",
-		"whoscrizzz"
-	]
+"name": "website-whoscrizzz",
+"private": true,
+"description": "Build your own website hosting platform with Workers for Platforms. Users can create and deploy sites through a simple web interface.",
+"version": "1.0.0",
+"license": "Apache-2.0",
+"type": "module",
+"engines": {
+"node": ">=18"
+},
+"devDependencies": {
+"@cloudflare/vitest-pool-workers": "^0.5.30",
+"@cloudflare/workers-types": "^4.20241205.0",
+"@types/node": "^25.6.0",
+"@types/jsonwebtoken": "^9.0.7",
+"@types/nodemailer": "^6.4.14",
+"@typescript-eslint/eslint-plugin": "^6.15.0",
+"@typescript-eslint/parser": "^6.15.0",
+"eslint": "^8.56.0",
+"typescript": "^5.3.3",
+"ts-node": "^10.9.2",
+"vitest": "^2.1.8",
+"wrangler": "^3.99.0"
+},
+"scripts": {
+"dev": "wrangler dev --remote",
+"build": "node scripts/setup-quick.js",
+"deploy": "wrangler deploy && node scripts/setup-quick.js --set-secrets",
+"setup": "node scripts/setup.js",
+"setup:quick": "node scripts/setup-quick.js",
+"test": "vitest run",
+"test:watch": "vitest",
+"type-check": "tsc --noEmit",
+"lint": "eslint src --ext .ts",
+"mcp:build": "tsc -p tsconfig.mcp.json",
+"mcp:inspect": "node --loader ts-node/esm src/mcp/inspector.ts"
+},
+"dependencies": {
+"hono": "^4.2.1",
+"workers-qb": "^0.1.1",
+"@anthropic-sdk/sdk": "^0.20.0",
+"@cloudflare/workers-types": "^4.20241205.0",
+"@octokit/rest": "^21.0.2",
+"@sendgrid/mail": "^8.1.0",
+"axios": "^1.7.7",
+"drizzle-orm": "^0.30.10",
+"drizzle-zod": "^0.5.1",
+"dotenv": "^16.3.1",
+"jsonwebtoken": "^9.1.2",
+"nodemailer": "^6.9.10",
+"passport": "^0.7.0",
+"passport-github2": "^0.1.12",
+"uuid": "^9.0.1",
+"zod": "^3.22.4",
+"date-fns": "^3.0.0"
+},
+"cloudflare": {
+"label": "Website Builder - whoscrizzz.com",
+"products": [
+"Workers",
+"Workers for Platforms",
+"D1",
+"KV",
+"R2",
+"Email Routing"
+],
+"categories": [
+"starter"
+],
+"preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/7ee998bb-6d98-43ab-dd7f-3f2d85a89c00/public",
+"preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/0c5e578d-ad97-4efa-fb3d-f8f4ac7e1700/preview",
+"publish": true,
+"bindings": {
+"DB": {
+"type": "d1",
+"id": "whoscrizzz_db",
+"preview_id": "whoscrizzz_db_preview"
+},
+"KV": {
+"type": "kv_namespace",
+"id": "whoscrizzz_kv",
+"preview_id": "whoscrizzz_kv_preview"
+},
+"R2_BUCKET": {
+"type": "r2",
+"bucket_name": "whoscrizzz-files",
+"preview_bucket_name": "whoscrizzz-files-preview"
+},
+"CUSTOM_DOMAIN": {
+"description": "(Optional) Your platform's domain, e.g. `whoscrizzz.com`. Leave empty to use workers.dev"
+},
+"CLOUDFLARE_API_TOKEN": {
+"description": "(Optional) API token with **SSL and Certificates Edit** permission for custom domain support. [Create token](https://dash.cloudflare.com/profile/api-tokens)"
+},
+"GITHUB_CLIENT_ID": {
+"description": "GitHub OAuth Client ID for authentication"
+},
+"GITHUB_CLIENT_SECRET": {
+"description": "GitHub OAuth Client Secret"
+},
+"CLAUDE_API_KEY": {
+"description": "Anthropic Claude API key for Claude integrations"
+},
+"SENDGRID_API_KEY": {
+"description": "SendGrid API key for email notifications"
+}
+}
+},
+"repository": {
+"type": "git",
+"url": "https://github.com/whoscrizzz/website-whoscrizzz.git"
+},
+"keywords": [
+"cloudflare",
+"workers",
+"website-builder",
+"d1",
+"typescript",
+"hono",
+"github-integration",
+"claude-ai",
+"whoscrizzz"
+]
 }
