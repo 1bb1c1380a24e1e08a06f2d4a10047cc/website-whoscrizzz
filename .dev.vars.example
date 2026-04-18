@@ -1,6 +1,7 @@
-# Workers for Platforms Template - Secrets
-# Copy to .dev.vars for local development
-# Run `cp .dev.vars.example .dev.vars` and fill in your values
+# Local development environment variables
+# Copy this file to .dev.vars for local development.
+# Run `cp .dev.vars.example .dev.vars` and fill in your values.
+# This file includes both secret values and non-secret local config.
 
 # Auto-provisioned by the setup script during Deploy to Cloudflare.
 # Required for deploying Worker scripts to the dispatch namespace.
