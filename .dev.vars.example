@@ -1,4 +1,31 @@
-# Workers for Platforms Template - Secrets
-# Copy to .dev.vars for local development
+# Local development environment variables
+# Copy this file to .dev.vars for local development.
+# Run `cp .dev.vars.example .dev.vars` and fill in your values.
+# This file includes both secret values and non-secret local config.
 
-# No secrets required - all necessary tokens are auto-provisioned during Deploy to Cloudflare
+# Auto-provisioned by the setup script during Deploy to Cloudflare.
+# Required for deploying Worker scripts to the dispatch namespace.
+DISPATCH_NAMESPACE_API_TOKEN=""
+
+# Your Cloudflare Account ID.
+# Auto-provisioned during Deploy to Cloudflare, or find it at:
+# https://dash.cloudflare.com/?to=/:account/workers
+ACCOUNT_ID=""
+
+# Optional: API token with "SSL and Certificates Edit" permission.
+# Required for custom hostname (custom domain) support via Cloudflare for SaaS.
+# Create a token at: https://dash.cloudflare.com/profile/api-tokens
+CLOUDFLARE_API_TOKEN=""
+
+# Optional: Zone ID of your custom domain.
+# Auto-detected by the setup script if CUSTOM_DOMAIN is set.
+# Find it on the Overview page of your domain in the Cloudflare dashboard.
+CLOUDFLARE_ZONE_ID=""
+
+# Optional: Your platform's custom domain (e.g. "myplatform.com").
+# Leave empty to use the default workers.dev subdomain.
+CUSTOM_DOMAIN=""
+
+# Optional: Fallback origin hostname for custom hostnames.
+# Defaults to "my.<CUSTOM_DOMAIN>" when not set.
+FALLBACK_ORIGIN=""
