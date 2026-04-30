@@ -1,133 +1,120 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "website-whoscrizzz",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
-	// Enable workers.dev subdomain (set to false if using custom domain with routes)
-	"workers_dev": true,
-	// Smart Placement - automatically run Worker close to your back-end services
-	"placement": {
-		"mode": "smart"
-	},
-	// Observability - enable logging for debugging
-	"observability": {
-		"enabled": true
-	},
-	// Workers for Platforms dispatch namespace
-	// This is the core binding that enables multi-tenant Worker deployment
-	// The namespace will be auto-created by the setup script
-	"dispatch_namespaces": [
-		{
-			"binding": "dispatcher",
-			"namespace": "workers-for-platforms-template",
-			"remote": true
-		}
-	],
-	// D1 Database for storing project metadata, user data, and content
-	// The database will be auto-provisioned during deployment
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "whoscrizzz_db",
-			"database_id": "whoscrizzz_db_production"
-		}
-	],
+"$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+"name": "website-whoscrizzz",
+"main": "src/index.ts",
+"compatibility_date": "2025-10-08",
+"compatibility_flags": ["nodejs_compat"],
+// Enable workers.dev subdomain (set to false if using custom domain with routes)
+"workers_dev": true,
+// Smart Placement - automatically run Worker close to your back-end services
+"placement": {
+"mode": "smart"
+},
+// Observability - enable logging for debugging
+"observability": {
+"enabled": true
+},
+// Workers for Platforms dispatch namespace
+// This is the core binding that enables multi-tenant Worker deployment
+// The namespace will be auto-created by the setup script
+"dispatch_namespaces": [
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "WORKER-NAME",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-02-04",
-  "observability": {
-    "enabled": true
-  },
-	//KV
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "55b2d820ff6f4ea2ae845cbdc7663c5c",
-      
-      // Optional: preview_id used when running `wrangler dev` for local dev
-      "preview_id": "<ID_OF_PREVIEW_KV_NAMESPACE_FOR_LOCAL_DEVELOPMENT>"
-    }
-  ]
+"binding": "dispatcher",
+"namespace": "workers-for-platforms-template",
+"remote": true
 }
-		}
-	],
-	// R2 Bucket for file storage (images, documents, etc.)
-	"r2_buckets": [
-		{
-			"binding": "R2_BUCKET",
-			"bucket_name": "whoscrizzz-files",
-			"preview_bucket_name": "whoscrizzz-files-preview"
-		}
-	],
-	// Environment variables
-	"vars": {
-		// Domain Configuration
-		"DOMAIN": "whoscrizzz.com",
-		"CUSTOM_DOMAIN": "whoscrizzz.com",
-		"ENVIRONMENT": "production",
+],
+// D1 Database for storing project metadata, user data, and content
+// The database will be auto-provisioned during deployment
+"d1_databases": [
+{
+"binding": "DB",
+"database_name": "whoscrizzz_db",
+"database_id": "whoscrizzz_db_production"
+}
+],
+// KV Namespace for caching and session storage
+"kv_namespaces": [
+{
+"binding": "KV",
+"id": "55b2d820ff6f4ea2ae845cbdc7663c5c",
+"preview_id": "<ID_OF_PREVIEW_KV_NAMESPACE_FOR_LOCAL_DEVELOPMENT>"
+}
+],
+// R2 Bucket for file storage (images, documents, etc.)
+"r2_buckets": [
+{
+"binding": "R2_BUCKET",
+"bucket_name": "whoscrizzz-files",
+"preview_bucket_name": "whoscrizzz-files-preview"
+}
+],
+// Environment variables
+"vars": {
+// Domain Configuration
+"DOMAIN": "whoscrizzz.com",
+"CUSTOM_DOMAIN": "whoscrizzz.com",
+"ENVIRONMENT": "production",
 
-		// API Configuration
-		"API_BASE_URL": "https://api.whoscrizzz.com",
-		"API_VERSION": "v1",
-		"API_TIMEOUT": "30000",
+// API Configuration
+"API_BASE_URL": "https://api.whoscrizzz.com",
+"API_VERSION": "v1",
+"API_TIMEOUT": "30000",
 
-		// Database
-		"DATABASE_TYPE": "d1",
+// Database
+"DATABASE_TYPE": "d1",
 
-		// Dispatch namespace name - must match the namespace above
-		"DISPATCH_NAMESPACE_NAME": "whoscrizzz"
-	},
+// Dispatch namespace name - must match the namespace above
+"DISPATCH_NAMESPACE_NAME": "whoscrizzz"
+},
 
-	// Secrets (configure via 'wrangler secret put' command)
-	// GitHub OAuth
-	// wrangler secret put GITHUB_CLIENT_ID
-	// wrangler secret put GITHUB_CLIENT_SECRET
-	// wrangler secret put GITHUB_REDIRECT_URI
+// Secrets (configure via 'wrangler secret put' command)
+// GitHub OAuth
+// wrangler secret put GITHUB_CLIENT_ID
+// wrangler secret put GITHUB_CLIENT_SECRET
+// wrangler secret put GITHUB_REDIRECT_URI
 
-	// JWT/Authentication
-	// wrangler secret put JWT_SECRET
+// JWT/Authentication
+// wrangler secret put JWT_SECRET
 
-	// Email Service
-	// wrangler secret put SENDGRID_API_KEY (or EMAIL_API_KEY)
-	// wrangler secret put EMAIL_FROM
+// Email Service
+// wrangler secret put SENDGRID_API_KEY (or EMAIL_API_KEY)
+// wrangler secret put EMAIL_FROM
 
-	// Claude API
-	// wrangler secret put CLAUDE_API_KEY
-	// wrangler secret put CLAUDE_MODEL
+// Claude API
+// wrangler secret put CLAUDE_API_KEY
+// wrangler secret put CLAUDE_MODEL
 
-	// Cloudflare API
-	// wrangler secret put CLOUDFLARE_API_TOKEN
-	// wrangler secret put CLOUDFLARE_ZONE_ID
-	// wrangler secret put CLOUDFLARE_ACCOUNT_ID
+// Cloudflare API
+// wrangler secret put CLOUDFLARE_API_TOKEN
+// wrangler secret put CLOUDFLARE_ZONE_ID
+// wrangler secret put CLOUDFLARE_ACCOUNT_ID
 
-	// Note: FALLBACK_ORIGIN, CLOUDFLARE_ZONE_ID, ACCOUNT_ID, and
-	// DISPATCH_NAMESPACE_API_TOKEN are auto-configured by the setup script
-	"upload_source_maps": true,
+// Note: FALLBACK_ORIGIN, CLOUDFLARE_ZONE_ID, ACCOUNT_ID, and
+// DISPATCH_NAMESPACE_API_TOKEN are auto-configured by the setup script
+"upload_source_maps": true,
 
-	// Environment-specific overrides
-	"env": {
-		"development": {
-			"vars": {
-				"ENVIRONMENT": "development",
-				"API_BASE_URL": "http://localhost:8787",
-				"CUSTOM_DOMAIN": "localhost"
-			},
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "whoscrizzz_db_dev",
-					"database_id": "whoscrizzz_db_dev"
-				}
-			]
-		},
-		"staging": {
-			"vars": {
-				"ENVIRONMENT": "staging",
-				"API_BASE_URL": "https://staging-api.whoscrizzz.com"
-			}
-		}
-	}
+// Environment-specific overrides
+"env": {
+"development": {
+"vars": {
+"ENVIRONMENT": "development",
+"API_BASE_URL": "http://localhost:8787",
+"CUSTOM_DOMAIN": "localhost"
+},
+"d1_databases": [
+{
+"binding": "DB",
+"database_name": "whoscrizzz_db_dev",
+"database_id": "whoscrizzz_db_dev"
+}
+]
+},
+"staging": {
+"vars": {
+"ENVIRONMENT": "staging",
+"API_BASE_URL": "https://staging-api.whoscrizzz.com"
+}
+}
+}
 }
