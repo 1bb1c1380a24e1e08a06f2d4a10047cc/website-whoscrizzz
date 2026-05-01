@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Cloudflare, Inc.
 // Licensed under the APACHE LICENSE, VERSION 2.0 license found in the LICENSE file or at http://www.apache.org/licenses/LICENSE-2.0
 
-import { ResourceValues } from "./types";
+import { ResourceValues } from "../types";
 
 function ResourceValueToString(value: ResourceValues, columnName?: string) {
 	if (value == null) return "null";

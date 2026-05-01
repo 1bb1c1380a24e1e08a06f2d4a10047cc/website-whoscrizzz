@@ -1,5 +1,5 @@
 // Cloudflare API integration for custom hostnames
-import type { Env } from "./env";
+import type { Env } from "../env";
 
 function getAuthHeaders(env: Env): Record<string, string> {
 	// Prefer user-provided API token with SSL permissions
